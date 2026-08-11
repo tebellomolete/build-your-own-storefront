@@ -1,92 +1,77 @@
-# Horizon
+# Dev Coffee — Build Your Own Storefront
 
-[Getting started](#getting-started) |
-[Staying up to date with Horizon changes](#staying-up-to-date-with-horizon-changes) |
-[Developer tools](#developer-tools) |
-[Contributing](#contributing) |
-[License](#license)
+Shopify Theme Development Module · Day 1 · Store Setup & Development Environment
 
-Horizon is the flagship of a new generation of first party Shopify themes. It incorporates the latest Liquid Storefronts features, including [theme blocks](https://shopify.dev/docs/storefronts/themes/architecture/blocks/theme-blocks/quick-start?framework=liquid).
+**Change notes.**
 
-- **Web-native in its purest form:** Themes run on the [evergreen web](https://www.w3.org/2001/tag/doc/evergreen-web/). We leverage the latest web browsers to their fullest, while maintaining support for the older ones through progressive enhancement—not polyfills.
-- **Lean, fast, and reliable:** Functionality and design defaults to "no" until it meets this requirement. Code ships on quality. Themes must be built with purpose. They shouldn't support each and every feature in Shopify.
-- **Server-rendered:** HTML must be rendered by Shopify servers using Liquid. Business logic and platform primitives such as translations and money formatting don't belong on the client. Async and on-demand rendering of parts of the page is OK, but we do it sparingly as a progressive enhancement.
-- **Functional, not pixel-perfect:** The Web doesn't require each page to be rendered pixel-perfect by each browser engine. Using semantic markup, progressive enhancement, and clever design, we ensure that themes remain functional regardless of the browser.
+1. **Theme migration.** Originally attempted with Shopify Dawn on a store named `my-store-yofcpcr4`. Per instructor guidance (Skye, Bitcube SDTP), migrated to Horizon.
+2. **Store rebuild.** The original store carried leftover schema data from prior themes that produced persistent upload errors on Horizon 4.1.3. Fixed by provisioning a clean store (`dev-coffee-46ztlwtt.myshopify.com`) with no theme history — CLI now uploads cleanly.
+3. **Brand direction.** The niche stayed as specialty coffee, but the brand was retooled from a generalist audience (home baristas) toward developers — the training programme is a developer programme, and the audience shift makes the store a stronger portfolio piece by the end of the module.
 
-## Getting started
+## Store Brief
 
-We recommend using the Skeleton Theme as a starting point for a theme development project. [Learn more on Shopify.dev](https://shopify.dev/themes/getting-started/create).
+### The niche: specialty coffee, developer-oriented
 
-To create a new theme project based on Horizon:
+`dev.coffee()` — trading as **Dev Coffee** — is an independent specialty coffee storefront selling roasted whole beans, pre-ground coffee, and pour-over equipment to software developers. The catalogue is deliberately variant-heavy: every bean product exposes roast level, grind (Whole Bean / Drip / Espresso / French Press / AeroPress), bag size (250g / 500g / 1kg), and purchase type (one-time vs. subscription, at monthly or quarterly cadence). Origin, altitude, processing method, and tasting notes are pinned as structured attributes rather than free-text fields. Equipment carries its own variant dimensions.
 
-```sh
-git clone https://github.com/Shopify/horizon.git
-```
+This complexity is deliberate. Later this week the module introduces advanced filtering and dynamic metafields, and a niche whose products only had one or two variants wouldn't stretch either feature. Coffee gives filtering something real to filter _by_ — roast, origin, brew method, subscription cadence, price band — and gives metafields somewhere real to live: tasting notes, altitude, process, brew ratios, and dev-themed use-case tags (`debugging`, `long-meetings`, `pair-programming`) don't fit into Shopify's default product fields, so they're the exact use case Metaobjects and Metafields were designed for.
 
-Install the [Shopify CLI](https://shopify.dev/docs/storefronts/themes/tools/cli) to connect your local project to a Shopify store. Learn about the [theme developer tools](https://shopify.dev/docs/storefronts/themes/tools) available, and the suggested [developer tools](#developer-tools) below.
+The choice is explicitly not the "outdoor & heritage lifestyle goods" niche used in the instructor's Northfield Supply Co. demo.
 
-Please note that the `main` branch may include code for features not yet released. You may encounter Liquid API properties that are not publicly documented, but will be when the feature is officially rolled out.
+### Target audience
 
-### Shopify Theme Store development
+Dev Coffee is aimed at software developers who take coffee seriously enough to buy specialty beans but don't have time to shop them the way a full-time home barista would. They read Hacker News in the morning, work through a subscription model naturally because they already pay for six SaaS tools, and they respond to product copy that treats them as insiders — dev-themed product names (`Debug & Brew`, `null pointer`, `Runtime Error`, `Async / Await`) signal that the brand is written _by_ someone who understands the audience, not _at_ them.
 
-If you're building a theme for the Shopify Theme Store, then do not use Horizon as a starting point. Themes based on, derived from, or incorporating Horizon are not eligible for submission to to the Shopify Theme Store. Use the [Skeleton Theme](https://github.com/Shopify/skeleton-theme) instead.
+## Page Scope
 
-## Staying up to date with Horizon changes
+Three custom pages will be built in addition to the standard homepage, product, collection, cart, checkout, and policy templates. Each is backed by a Shopify **Metaobject** — a custom content type with defined fields — so the content is structured, reusable, and editable through the admin without touching Liquid.
 
-Say you're building a new theme off Horizon but you still want to be able to pull in the latest changes, you can add a remote `upstream` pointing to this Horizon repository.
+### 1. Brew Log
 
-1. Navigate to your local theme folder.
-2. Verify the list of remotes and validate that you have both an `origin` and `upstream`:
+A brewing tutorials hub. Each entry is a full recipe for a specific method — pour-over, AeroPress, French press, moka pot, espresso, cold brew — with steps written in a deliberately code-flavoured voice ("init the kettle", "configure the grind", "deploy hot water").
 
-```sh
-git remote -v
-```
+**Metaobject: `brew_recipe`** — fields: `method_name` (single-line), `difficulty` (single-line: beginner / intermediate / advanced), `total_time_minutes` (integer), `coffee_water_ratio` (single-line, e.g. "1:16"), `ideal_grind` (single-line), `equipment` (list of product references), `steps` (multi-line rich text), `hero_image` (file reference).
 
-3. If you don't see an `upstream`, you can add one that points to Shopify's Horizon repository:
+### 2. The Beans
 
-```sh
-git remote add upstream https://github.com/Shopify/horizon.git
-```
+Profile pages for each single-origin bean and each blend — where it's grown, altitude, processing method, tasting notes, and which brew method it plays best with. Doubles as SEO landing pages for origin-specific search queries.
 
-4. Pull in the latest Horizon changes into your repository:
+**Metaobject: `bean_profile`** — fields: `origin_country` (single-line), `region` (single-line), `altitude_range` (single-line, e.g. "1,600–2,100m"), `process` (single-line: washed / natural / honey), `roast_level` (single-line), `flavour_notes` (multi-line text), `ideal_brew_methods` (list, e.g. pour-over / espresso), `hero_image` (file reference), `associated_products` (list of product references).
 
-```sh
-git fetch upstream
-git pull upstream main
-```
+### 3. FAQ
 
-## Developer tools
+A structured FAQ where each question-and-answer is its own metaobject entry rather than being trapped inside a single hardcoded Liquid template. Categorised so the page can filter by topic (Subscriptions, Shipping, Brewing, Equipment).
 
-There are a number of really useful tools that the Shopify Themes team uses during development. Horizon is already set up to work with these tools.
+**Metaobject: `faq_entry`** — fields: `question` (single-line), `answer` (multi-line rich text), `category` (single-line, enum-style: subscriptions / shipping / brewing / equipment / general), `sort_order` (integer), `is_featured` (true/false).
 
-### Shopify CLI
+## Dev Environment
 
-[Shopify CLI](https://shopify.dev/docs/storefronts/themes/tools/cli) helps you build Shopify themes faster and is used to automate and enhance your local development workflow. It comes bundled with a suite of commands for developing Shopify themes—everything from working with themes on a Shopify store (e.g. creating, publishing, deleting themes) or launching a development server for local theme development.
+- **Development store:** `dev-coffee-46ztlwtt.myshopify.com` (display name "Dev Coffee")
+- **Store currency:** ZAR (South African Rand)
+- **Shopify CLI version:** 4.6.1 (verified with `shopify version`)
+- **Theme:** Horizon 4.1.3, installed via the Shopify Theme Library and pulled locally with `shopify theme pull`. A direct GitHub clone of Horizon's `main` branch was tried first but produced schema-validation errors on upload — the theme-store install is the validated stable version.
+- **Local preview:** `http://127.0.0.1:9292`
+- **GitHub repository:** `github.com/tebellomolete/build-your-own-storefront`. Horizon files committed to `main`.
+- **Catalogue:** the default Shopify placeholder products were deleted and replaced with a six-product dev-themed coffee catalogue: `Debug & Brew`, `null pointer`, `Runtime Error`, `Async / Await` (beans, with Grind and — on the flagships — Size variants), plus `The Compiler` (pour-over dripper) and `git push` (paper filters). All six products are grouped under the collection `./roast`.
 
-You can follow this [quick start guide for theme developers](https://shopify.dev/docs/themes/tools/cli) to get started.
+**Hot reloading verified.** With `shopify theme dev` running, a temporary `<h1>TEST</h1>` was added to `layout/theme.liquid` immediately below the `<body>` tag. The browser at `http://127.0.0.1:9292` reloaded automatically and displayed the tag without a manual refresh. The tag was then removed, and the browser reloaded again to confirm the change had propagated back out.
 
-### Theme Check
+## Stretch A — GitHub sync (Online Store admin)
 
-We recommend using [Theme Check](https://github.com/shopify/theme-check) as a way to validate and lint your Shopify themes.
+Connected `github.com/tebellomolete/build-your-own-storefront` (branch `main`) to the Dev Coffee store's theme library via Online Store → Themes → Add theme → Connect from GitHub.
 
-We've added Theme Check to Horizon's [list of VS Code extensions](/.vscode/extensions.json) so if you're using Visual Studio Code as your code editor of choice, you'll be prompted to install the [Theme Check VS Code](https://marketplace.visualstudio.com/items?itemName=Shopify.theme-check-vscode) extension upon opening VS Code after you've forked and cloned Horizon.
+**Local CLI edit vs. Theme Editor edit when GitHub sync is active.** A change made through `shopify theme dev` (or a commit pushed from local) flows _outward_: the developer edits Liquid or JSON in their IDE, commits, pushes to `main`, and Shopify's sync pulls the change into the connected theme in the library. Git history is authoritative — every change is a commit with an author, message, and diff. A change made through the Shopify Theme Editor (drag a section, tweak a colour, edit copy in the customizer) flows _inward_: the merchant edits in the browser, Shopify auto-commits the resulting `settings_data.json` (and sometimes template JSON) mutation directly to the connected branch on GitHub, authored as the Shopify GitHub bot. This means the branch has two writers, and any developer pulling `main` locally needs to expect merchant commits interleaved with their own. The practical rule: developers work in `sections/`, `blocks/`, `snippets/`, `layout/`, `assets/`, and `config/settings_schema.json`; merchants effectively "own" `config/settings_data.json` and any JSON template edits done through the customizer. Conflicts arise when both sides touch the same file, which is why keeping developer work in `.liquid` code and merchant work in the customizer is a discipline worth enforcing even though nothing in Shopify technically prevents crossover.
 
-You can also run it from a terminal with the following Shopify CLI command:
+## Stretch B — VS Code Liquid extension + format on save
 
-```bash
-shopify theme check
-```
+Installed the official Shopify Liquid extension (`Shopify.theme-check-vscode`) and configured `.vscode/settings.json` to auto-format `.liquid` files on save:
 
-You can follow the [theme check documentation](https://shopify.dev/docs/storefronts/themes/tools/theme-check) for more details.
+json
+{
+"[liquid]": {
+"editor.defaultFormatter": "Shopify.theme-check-vscode",
+"editor.formatOnSave": true
+}
+}
 
-#### Shopify/theme-check-action
-
-Horizon runs [Theme Check](#Theme-Check) on every commit via [Shopify/theme-check-action](https://github.com/Shopify/theme-check-action).
-
-## Contributing
-
-We are not accepting contributions to Horizon at this time.
-
-## License
-
-Copyright (c) 2025-present Shopify Inc. See [LICENSE](/LICENSE.md) for further details.
+The `[liquid]` selector scopes the settings to Liquid files only, so JavaScript and JSON files continue to use their own default formatters. `editor.defaultFormatter` names the extension that should handle the formatting, and `editor.formatOnSave` triggers it on every `Cmd+S`.
