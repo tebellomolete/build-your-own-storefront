@@ -1,0 +1,115 @@
+{% doc %}
+  A single stack frame in the `stack-trace` section. Emphasis toggle
+  swaps a class and surfaces the caption_color control (Stretch A).
+
+  @setting frame_label: the code-flavored `at Class.method(args)` line
+  @setting caption: human-readable line under the label
+  @setting emphasis: bolds the frame + reveals caption_color
+  @setting caption_color: caption text color (only when emphasis is on)
+{% enddoc %}
+
+{%- liquid
+  assign classes = 'stack-trace-frame'
+  if block.settings.emphasis
+    assign classes = classes | append: ' stack-trace-frame--emphasis'
+  endif
+-%}
+
+<li
+  class="{{ classes }}"
+  style="
+    {%- if block.settings.emphasis and block.settings.caption_color != blank -%}
+      --stack-trace-frame-caption-color: {{ block.settings.caption_color }};
+    {%- endif -%}
+  "
+  {{ block.shopify_attributes }}
+>
+  {%- if block.settings.frame_label != blank -%}
+    <p class="stack-trace-frame__label">{{ block.settings.frame_label }}</p>
+  {%- endif -%}
+  {%- if block.settings.caption != blank -%}
+    <p class="stack-trace-frame__caption">{{ block.settings.caption }}</p>
+  {%- endif -%}
+</li>
+
+{% stylesheet %}
+  .stack-trace-frame {
+    list-style: none;
+    padding: 6px 10px 6px 20px;
+    border-left: 2px solid rgb(0 0 0 / 15%);
+  }
+
+  .stack-trace--terminal .stack-trace-frame {
+    border-left-color: rgb(255 255 255 / 15%);
+  }
+
+  .stack-trace-frame__label {
+    margin: 0;
+    font-family: inherit;
+    font-size: 0.9rem;
+    line-height: 1.4;
+  }
+
+  .stack-trace-frame__caption {
+    margin: 2px 0 0;
+    font-size: 0.8rem;
+    opacity: 0.7;
+    color: var(--stack-trace-frame-caption-color, inherit);
+  }
+
+  .stack-trace-frame--emphasis {
+    border-left-color: var(--stack-trace-accent);
+    background: rgb(0 0 0 / 4%);
+  }
+
+  .stack-trace--terminal .stack-trace-frame--emphasis {
+    background: rgb(255 255 255 / 6%);
+  }
+
+  .stack-trace-frame--emphasis .stack-trace-frame__label {
+    font-weight: 700;
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "t:names.stack_trace_frame",
+  "tag": null,
+  "settings": [
+    {
+      "type": "text",
+      "id": "frame_label",
+      "label": "t:settings.stack_trace_frame_label",
+      "default": "t:text_defaults.stack_trace_frame_farm_label"
+    },
+    {
+      "type": "text",
+      "id": "caption",
+      "label": "t:settings.caption",
+      "default": "t:text_defaults.stack_trace_frame_farm_caption"
+    },
+    {
+      "type": "checkbox",
+      "id": "emphasis",
+      "label": "t:settings.stack_trace_emphasis",
+      "default": false
+    },
+    {
+      "type": "color",
+      "id": "caption_color",
+      "label": "t:settings.color",
+      "visible_if": "{{ block.settings.emphasis }}"
+    }
+  ],
+  "presets": [
+    {
+      "name": "t:names.stack_trace_frame",
+      "category": "t:categories.custom",
+      "settings": {
+        "frame_label": "t:text_defaults.stack_trace_frame_farm_label",
+        "caption": "t:text_defaults.stack_trace_frame_farm_caption"
+      }
+    }
+  ]
+}
+{% endschema %}

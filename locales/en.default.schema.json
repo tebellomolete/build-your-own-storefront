@@ -163,7 +163,8 @@
     "disclosures": "Disclosures",
     "disclosures_metafield_content": "Required safety warnings and regulatory disclosures for this product.",
     "app_required_for_ratings": "An app is required for product ratings. [Learn more](https://help.shopify.com/manual/apps)",
-    "navigation": "Navigation"
+    "navigation": "Navigation",
+    "stack_trace_intro": "Reads like a call stack — one frame per step in the bean's journey from farm to cup."
   },
   "html_defaults": {
     "join_our_email_list": "<h2>Join our email list</h2>",
@@ -418,7 +419,11 @@
     "view_all_button": "View all",
     "disclosures": "Disclosures",
     "pills": "Pills",
-    "comparison_slider": "Comparison slider"
+    "comparison_slider": "Comparison slider",
+    "stack_trace": "Stack trace",
+    "stack_trace_header": "Stack trace header",
+    "stack_trace_frame": "Stack trace frame",
+    "stack_trace_product": "Stack trace product frame"
   },
   "options": {
     "above_carousel": "Above carousel",
@@ -731,7 +736,12 @@
     "wide": "Wide",
     "youtube": "YouTube",
     "with_hints": "With hints",
-    "below_media": "Below media"
+    "below_media": "Below media",
+    "stack_trace_monospace": "Monospace card",
+    "stack_trace_terminal": "Terminal",
+    "stack_trace_info": "Info",
+    "stack_trace_warning": "Warning",
+    "stack_trace_error": "Error"
   },
   "settings": {
     "accordion": "Accordion",
@@ -1184,7 +1194,17 @@
     "top_row_background": "Top row background",
     "top_row_text": "Top row text",
     "bottom_row_background": "Bottom row background",
-    "bottom_row_text": "Bottom row text"
+    "bottom_row_text": "Bottom row text",
+    "stack_trace_frame_style": "Frame style",
+    "stack_trace_accent_color": "Accent color",
+    "stack_trace_show_line_numbers": "Show line numbers",
+    "stack_trace_severity": "Severity",
+    "stack_trace_frame_label": "Frame label",
+    "stack_trace_emphasis": "Emphasize this frame",
+    "stack_trace_show_price": "Show price",
+    "caption": "Caption",
+    "subtitle": "Subtitle",
+    "hint": "Hint"
   },
   "text_defaults": {
     "accordion_heading": "Accordion heading",
@@ -1222,6 +1242,15 @@
     "what_is_return_policy": "What is the return policy?",
     "when_will_order_arrive": "When will I get my order?",
     "where_are_products_made": "Where are your products manufactured?",
-    "disclosures": "Disclosures"
+    "disclosures": "Disclosures",
+    "stack_trace_header_title": "Uncaught FreshBeanException: peak flavour window opens in 12h",
+    "stack_trace_header_subtitle": "Traceback (most recent frame last)",
+    "stack_trace_frame_farm_label": "at Farm.origin(Yirgacheffe, 1900m)",
+    "stack_trace_frame_farm_caption": "Smallholder lot, hand-picked at cherry",
+    "stack_trace_frame_process_label": "at Mill.process(washed, 48h fermentation)",
+    "stack_trace_frame_process_caption": "Depulped, fermented, sun-dried on raised beds",
+    "stack_trace_frame_roast_label": "at Roaster.roast(medium, first-crack + 45s)",
+    "stack_trace_frame_roast_caption": "Development ratio 22%, rested 5 days before bagging",
+    "stack_trace_product_hint": "Recommended: V60 at a 1:16 ratio"
   }
 }

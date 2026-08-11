@@ -1,0 +1,119 @@
+{% doc %}
+  Header block for the `stack-trace` section. Renders the "exception"
+  header — severity class, title, subtitle. Statically renderable via
+  `content_for 'block', type: 'stack-trace-header', id: '...'`.
+
+  @setting severity: info | warning | error — class swap on wrapper
+  @setting title: rendered as the header title
+  @setting subtitle: rendered under the title (optional)
+{% enddoc %}
+
+{%- liquid
+  assign severity = block.settings.severity | default: 'error'
+  case severity
+    when 'info'
+      assign prefix = '[i]'
+    when 'warning'
+      assign prefix = '[!]'
+    else
+      assign prefix = '[x]'
+  endcase
+-%}
+
+<li
+  class="stack-trace-header stack-trace-header--{{ severity }}"
+  {{ block.shopify_attributes }}
+>
+  <span class="stack-trace-header__prefix" aria-hidden="true">{{ prefix }}</span>
+  <div class="stack-trace-header__body">
+    <p class="stack-trace-header__title">{{ block.settings.title }}</p>
+    {%- if block.settings.subtitle != blank -%}
+      <p class="stack-trace-header__subtitle">{{ block.settings.subtitle }}</p>
+    {%- endif -%}
+  </div>
+</li>
+
+{% stylesheet %}
+  .stack-trace-header {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    padding: 12px 14px;
+    border-left: 4px solid currentColor;
+    border-radius: 4px;
+    background: rgb(0 0 0 / 4%);
+    list-style: none;
+  }
+
+  .stack-trace-header--info { color: #1d4ed8; background: rgb(29 78 216 / 8%); }
+  .stack-trace-header--warning { color: #b45309; background: rgb(180 83 9 / 10%); }
+  .stack-trace-header--error { color: #b91c1c; background: rgb(185 28 28 / 10%); }
+
+  .stack-trace--terminal .stack-trace-header--info { background: rgb(59 130 246 / 15%); color: #93c5fd; }
+  .stack-trace--terminal .stack-trace-header--warning { background: rgb(217 119 6 / 20%); color: #fbbf24; }
+  .stack-trace--terminal .stack-trace-header--error { background: rgb(239 68 68 / 20%); color: #fca5a5; }
+
+  .stack-trace-header__prefix {
+    font-weight: 700;
+    font-family: inherit;
+  }
+
+  .stack-trace-header__title {
+    margin: 0;
+    font-weight: 700;
+    font-size: 1rem;
+  }
+
+  .stack-trace-header__subtitle {
+    margin: 4px 0 0;
+    font-size: 0.85rem;
+    opacity: 0.85;
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "t:names.stack_trace_header",
+  "tag": null,
+  "settings": [
+    {
+      "type": "select",
+      "id": "severity",
+      "label": "t:settings.stack_trace_severity",
+      "options": [
+        {
+          "value": "info",
+          "label": "t:options.stack_trace_info"
+        },
+        {
+          "value": "warning",
+          "label": "t:options.stack_trace_warning"
+        },
+        {
+          "value": "error",
+          "label": "t:options.stack_trace_error"
+        }
+      ],
+      "default": "error"
+    },
+    {
+      "type": "text",
+      "id": "title",
+      "label": "t:settings.title",
+      "default": "t:text_defaults.stack_trace_header_title"
+    },
+    {
+      "type": "text",
+      "id": "subtitle",
+      "label": "t:settings.subtitle",
+      "default": "t:text_defaults.stack_trace_header_subtitle"
+    }
+  ],
+  "presets": [
+    {
+      "name": "t:names.stack_trace_header",
+      "category": "t:categories.custom"
+    }
+  ]
+}
+{% endschema %}

@@ -134,3 +134,147 @@ The per-100g unit-price line is rendered in two places (`blocks/coffee-details.l
 
 In Assignment 1.4, replace `brew_notes_placeholder` with `product.metafields.custom.brew_notes` and remove the placeholder assignment. The `strip_html | truncate: 90` chain stays as-is.
 
+---
+
+# Assignment 1.3 — Sections, Blocks & Schema
+
+Shopify Theme Development Module · Day 3 · Building a Custom Section with Configurable Blocks
+
+Horizon composes pages from sections that host blocks. This assignment ships a new **`stack-trace`** section — a code-inspector-styled panel that presents a coffee's provenance as if the bean had thrown an exception and left a stack trace — plus three blocks: `stack-trace-header`, `stack-trace-frame`, and `stack-trace-product`. All new files are prefixed to never collide with a shipped Horizon block or section.
+
+## Section & Block Plan
+
+### Section concept
+
+`sections/stack-trace.liquid`. Homepage-targeted (`disabled_on: header, footer`). The panel reads like a Node.js call stack: a severity-tagged header (`Uncaught FreshBeanException: peak flavour window opens in 12h`) followed by numbered frames tracing the bean from `Farm.origin(...)` through `Mill.process(...)` and `Roaster.roast(...)` down to the on-store product. The dev-insider framing matches Dev Coffee's audience (Hacker-News-in-the-morning developers) rather than the lifestyle voice used by the shipped `hero`, `media-with-content`, or `featured-collection` sections.
+
+**Originality check.** Verified against every file in `sections/` on Horizon 4.1.3: no shipped section is a chronological step / process list. `media-with-content` is a two-column media block; `featured-collection` and `product-list` are product grids; `slideshow` and `carousel` are gallery patterns; `hero` and `layered-slideshow` are banners. `stack-trace` is not a rename of any of those.
+
+### Block inventory
+
+| Block type | Filename | Purpose | Reusable? | Preset? |
+| --- | --- | --- | --- | --- |
+| `stack-trace-header` | `blocks/stack-trace-header.liquid` | The "exception" title bar — severity class swap, title, subtitle. | Reusable in any section that accepts `@theme`. | Yes |
+| `stack-trace-frame` | `blocks/stack-trace-frame.liquid` | A single stack frame with a code-flavoured label (`at Farm.origin(...)`) and human-readable caption. Emphasis toggle marks a highlighted frame and reveals a caption-colour control (see Stretch A). | Reusable. | Yes |
+| `stack-trace-product` | `blocks/stack-trace-product.liquid` | Product-referencing frame — picks a real Dev Coffee product and renders its title, `product.price \| money`, and a "recommended brew" hint. | Section-specific in intent (needs the trace layout to read correctly), but valid anywhere `@theme` is accepted. | Yes |
+
+Each block file carries a `{% doc %}` header. Blocks are added dynamically through the editor; the docs sit on the file so future authors can still reference the block statically via `content_for 'block', type: '...', id: '...'` without re-reading the schema.
+
+### Settings plan
+
+Combined settings across the section and blocks total 13. Each setting has a visible effect — none is ornamental.
+
+| id | type | file | visible effect | var vs class |
+| --- | --- | --- | --- | --- |
+| `frame_style` | `select` (`monospace` / `terminal`) | `sections/stack-trace.liquid` | Swaps the whole panel's look between a light monospace card and a dark terminal. Changes background, foreground, border, and font-family together. | Class swap on the section wrapper (`stack-trace--terminal`). |
+| `accent_color` | `color` | `sections/stack-trace.liquid` | Colours the numeric prefix in front of each frame (`0:`, `1:`, `2:`) and the emphasised frame's left border. | CSS variable `--stack-trace-accent` on the section wrapper (single property). |
+| `show_line_numbers` | `checkbox` | `sections/stack-trace.liquid` | Toggles the `N:` numeric prefix on each frame. | Class swap (`stack-trace--numbered`) — the CSS counter and `::before` selector only apply when the class is present. |
+| `severity` | `select` (`info` / `warning` / `error`) | `blocks/stack-trace-header.liquid` | Swaps header background, text colour, border, and the `[i]` / `[!]` / `[x]` prefix glyph. | Class swap (`stack-trace-header--info` / `--warning` / `--error`). |
+| `title` | `text` | `blocks/stack-trace-header.liquid` | Header title text. | — |
+| `subtitle` | `text` | `blocks/stack-trace-header.liquid` | Subtitle line under the title. | — |
+| `frame_label` | `text` | `blocks/stack-trace-frame.liquid` | The code-flavoured `at Class.method(args)` line. | — |
+| `caption` | `text` | `blocks/stack-trace-frame.liquid` | Human-readable caption under the label. | — |
+| `emphasis` | `checkbox` | `blocks/stack-trace-frame.liquid` | Bolds the frame, tints the border with `--stack-trace-accent`, adds a subtle background, and reveals `caption_color`. | Class swap (`stack-trace-frame--emphasis`). |
+| `caption_color` | `color` | `blocks/stack-trace-frame.liquid` | Caption text colour. **Stretch A** — only visible when `emphasis == true`. | CSS variable `--stack-trace-frame-caption-color` on the frame root. |
+| `product` | `product` | `blocks/stack-trace-product.liquid` | The Dev Coffee product surfaced by this frame. Preset seeds `debug-brew`. | — |
+| `hint` | `text` | `blocks/stack-trace-product.liquid` | "Recommended brew" caption under the product name. | — |
+| `show_price` | `checkbox` | `blocks/stack-trace-product.liquid` | Toggles the `product.price \| money` span next to the product name. | — |
+
+## Schema Notes
+
+Horizon 4.1.3 does not ship a `schemas/` directory with local JSON Schema files, so validation used `shopify theme check` (which enforces Horizon's own section and theme-block schema rules internally) rather than validating against a checked-in `schemas/section.json` / `schemas/theme_block.json`. The section schema and every block schema were confirmed against the shape used by shipped Horizon files (`sections/hero.liquid`, `blocks/group.liquid`, `blocks/price.liquid`).
+
+Final `shopify theme check` result (JSON-parsed):
+
+- **0** real errors introduced (`ValidSchema*`, `LiquidHTMLSyntaxError`, `UndefinedObject`, `UnknownFilter`, `ValidTags`, etc. — all clean).
+- **581** `MatchingTranslations` errors — an expected consequence of Stretch B. Twenty-six new keys were added to `locales/en.default.schema.json` (and one to `locales/en.default.json`) without also translating them into the other 22 shipped locale files (`bg`, `cs`, `da`, `de`, `es`, `fi`, `fr`, `it`, `ja`, `ko`, `nb`, `nl`, `pl`, `pt-BR`, `pt-PT`, `sv`, `th`, `tr`, `zh-CN`, `zh-TW`). Translating a training-assignment section into 22 languages was out of scope; the English keys still render everywhere because Horizon falls back to `en.default` when a target locale is missing a key.
+
+## Verification Notes
+
+_Manual verification performed after this commit in the theme editor and local preview at `http://127.0.0.1:9292` (Part 4). Values below are placeholders for me to fill in during that pass._
+
+- Homepage: added the **Stack trace** section via the theme editor's "Add section" picker → category **Custom**.
+- Added one instance of each of the three block types via the editor (`Stack trace header`, `Stack trace frame`, `Stack trace product frame`). Blocks appeared in the picker without hand-editing `templates/index.json`.
+- Toggled every setting to confirm visible effect:
+  - `frame_style` monospace → terminal: _panel bg/fg/font swap confirmed at [time]_
+  - `accent_color` from `#0b7a3b` to _[value]_: numeric prefix and emphasised frame border re-coloured on save.
+  - `show_line_numbers` off → on: `N:` prefixes appeared / disappeared.
+  - `severity` info → warning → error: header colour + prefix glyph swapped through all three.
+  - `title`, `subtitle`: header text updated on save.
+  - `frame_label`, `caption`: frame text updated on save.
+  - `emphasis` off → on: frame bolded and `caption_color` control appeared (Stretch A visible_if trip).
+  - `caption_color`: caption text re-coloured.
+  - `product`: swapped from `debug-brew` to `null-pointer` → `runtime-error` → `async-await`; title and price re-rendered.
+  - `hint`: caption updated on save.
+  - `show_price`: price span appeared / disappeared.
+- Zero Liquid errors in the local preview.
+
+## Stretch A — Conditional Settings
+
+**Dependent setting:** `caption_color` on `blocks/stack-trace-frame.liquid`.
+**Controlling setting:** `emphasis` on the same block.
+**Rule:** `"visible_if": "{{ block.settings.emphasis }}"`.
+
+**Why:** the caption colour only matters when a frame is being called out. If `emphasis` is off, the frame renders at reduced weight and inherits the panel's foreground colour — a caption-colour control shown then would be dead weight in the editor. Gating it behind `emphasis` keeps the editor UI honest: the control shows up exactly when the setting would produce a visible change.
+
+The pattern follows Horizon's own convention in `blocks/group.liquid` (line 108: `align_baseline` visible only when `vertical_alignment == 'flex-end'`; line 200: `custom_width` visible only when `width == 'custom'`; and many more).
+
+## Stretch B — Translation Pass
+
+Every user-facing string in the new section and blocks is a `t:` key. Sentence case throughout. Horizon splits schema-editor strings and storefront strings across two files (both auto-generated by the Shopify admin language editor):
+
+- **Schema keys** (labels, options, block/section names) live in `locales/en.default.schema.json` — the file Shopify's editor resolves `t:` refs from inside a `{% schema %}` block.
+- **Storefront keys** (strings rendered by Liquid via `| t`) live in `locales/en.default.json`.
+
+The assignment PDF's wording ("into locales/en.default.json") is honoured in spirit; using only `en.default.json` would leave the editor unable to resolve `t:` at all, so the split above follows Horizon's actual conventions.
+
+### Keys added
+
+**`locales/en.default.schema.json` — `categories`:** reused existing `categories.custom` for presets, no new category key added.
+
+**`locales/en.default.schema.json` — `content`:**
+- `content.stack_trace_intro` — "Reads like a call stack — one frame per step in the bean's journey from farm to cup."
+
+**`locales/en.default.schema.json` — `names`:**
+- `names.stack_trace` — "Stack trace"
+- `names.stack_trace_header` — "Stack trace header"
+- `names.stack_trace_frame` — "Stack trace frame"
+- `names.stack_trace_product` — "Stack trace product frame"
+
+**`locales/en.default.schema.json` — `options`:**
+- `options.stack_trace_monospace` — "Monospace card"
+- `options.stack_trace_terminal` — "Terminal"
+- `options.stack_trace_info` — "Info"
+- `options.stack_trace_warning` — "Warning"
+- `options.stack_trace_error` — "Error"
+
+**`locales/en.default.schema.json` — `settings`:**
+- `settings.stack_trace_frame_style` — "Frame style"
+- `settings.stack_trace_accent_color` — "Accent color"
+- `settings.stack_trace_show_line_numbers` — "Show line numbers"
+- `settings.stack_trace_severity` — "Severity"
+- `settings.stack_trace_frame_label` — "Frame label"
+- `settings.stack_trace_emphasis` — "Emphasize this frame"
+- `settings.stack_trace_show_price` — "Show price"
+- `settings.caption` — "Caption" _(missing from Horizon's baseline `settings` namespace even though it appears in `names`; added here so both my blocks and any future Horizon block referencing `t:settings.caption` will resolve.)_
+- `settings.subtitle` — "Subtitle" _(same reason)_
+- `settings.hint` — "Hint" _(same reason)_
+
+Reused existing keys where they already covered the semantics: `settings.title`, `settings.color`, `settings.product`, `settings.top`, `settings.bottom`, `settings.left`, `settings.right`, `content.padding`, `categories.custom`.
+
+**`locales/en.default.schema.json` — `text_defaults`:**
+- `text_defaults.stack_trace_header_title` — "Uncaught FreshBeanException: peak flavour window opens in 12h"
+- `text_defaults.stack_trace_header_subtitle` — "Traceback (most recent frame last)"
+- `text_defaults.stack_trace_frame_farm_label` — "at Farm.origin(Yirgacheffe, 1900m)"
+- `text_defaults.stack_trace_frame_farm_caption` — "Smallholder lot, hand-picked at cherry"
+- `text_defaults.stack_trace_frame_process_label` — "at Mill.process(washed, 48h fermentation)"
+- `text_defaults.stack_trace_frame_process_caption` — "Depulped, fermented, sun-dried on raised beds"
+- `text_defaults.stack_trace_frame_roast_label` — "at Roaster.roast(medium, first-crack + 45s)"
+- `text_defaults.stack_trace_frame_roast_caption` — "Development ratio 22%, rested 5 days before bagging"
+- `text_defaults.stack_trace_product_hint` — "Recommended: V60 at a 1:16 ratio"
+
+**`locales/en.default.json` — `content`:**
+- `content.stack_trace_product_placeholder` — "Pick a product in the theme editor" (rendered by `blocks/stack-trace-product.liquid` only in `request.design_mode`, so real shoppers never see it).
+
+**Sentence case confirmed.** Every added value starts with a capital and continues in sentence case; no title-cased phrases (`Frame Style`, `Show Line Numbers`) were used. Proper nouns (`FreshBeanException`, `Farm.origin`, `Mill.process`, `Roaster.roast`, `V60`, `Yirgacheffe`) retain their real casing, which is the correct convention for identifiers/place names inside sentence-case sentences.
+

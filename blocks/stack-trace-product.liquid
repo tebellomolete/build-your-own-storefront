@@ -1,0 +1,110 @@
+{% doc %}
+  A product-referencing stack frame. Picks a Dev Coffee product and
+  renders name, optional price, and a "recommended brew" hint.
+
+  @setting product: product picker
+  @setting hint: caption under the product name
+  @setting show_price: toggle price line
+{% enddoc %}
+
+{%- liquid
+  assign product = block.settings.product
+-%}
+
+<li
+  class="stack-trace-product"
+  {{ block.shopify_attributes }}
+>
+  {%- if product != blank -%}
+    <a href="{{ product.url }}" class="stack-trace-product__link">
+      <span class="stack-trace-product__name">{{ product.title }}</span>
+      {%- if block.settings.show_price -%}
+        <span class="stack-trace-product__price">{{ product.price | money }}</span>
+      {%- endif -%}
+    </a>
+    {%- if block.settings.hint != blank -%}
+      <p class="stack-trace-product__hint">{{ block.settings.hint }}</p>
+    {%- endif -%}
+  {%- elsif request.design_mode -%}
+    <p class="stack-trace-product__name">{{ 'content.stack_trace_product_placeholder' | t }}</p>
+  {%- endif -%}
+</li>
+
+{% stylesheet %}
+  .stack-trace-product {
+    list-style: none;
+    padding: 8px 10px 8px 20px;
+    border-left: 2px solid var(--stack-trace-accent);
+    background: rgb(0 0 0 / 3%);
+    border-radius: 0 4px 4px 0;
+  }
+
+  .stack-trace--terminal .stack-trace-product {
+    background: rgb(255 255 255 / 5%);
+  }
+
+  .stack-trace-product__link {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 10px;
+    color: inherit;
+    text-decoration: none;
+  }
+
+  .stack-trace-product__link:hover .stack-trace-product__name {
+    text-decoration: underline;
+  }
+
+  .stack-trace-product__name {
+    font-weight: 700;
+    font-family: inherit;
+    font-size: 0.95rem;
+  }
+
+  .stack-trace-product__price {
+    opacity: 0.75;
+    font-size: 0.85rem;
+  }
+
+  .stack-trace-product__hint {
+    margin: 4px 0 0;
+    font-size: 0.8rem;
+    opacity: 0.75;
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "t:names.stack_trace_product",
+  "tag": null,
+  "settings": [
+    {
+      "type": "product",
+      "id": "product",
+      "label": "t:settings.product"
+    },
+    {
+      "type": "text",
+      "id": "hint",
+      "label": "t:settings.hint",
+      "default": "t:text_defaults.stack_trace_product_hint"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_price",
+      "label": "t:settings.stack_trace_show_price",
+      "default": true
+    }
+  ],
+  "presets": [
+    {
+      "name": "t:names.stack_trace_product",
+      "category": "t:categories.custom",
+      "settings": {
+        "hint": "t:text_defaults.stack_trace_product_hint",
+        "show_price": true
+      }
+    }
+  ]
+}
+{% endschema %}

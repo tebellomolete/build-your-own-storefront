@@ -1,0 +1,218 @@
+{%- liquid
+  assign wrapper_classes = 'stack-trace stack-trace--' | append: section.settings.frame_style
+  if section.settings.show_line_numbers
+    assign wrapper_classes = wrapper_classes | append: ' stack-trace--numbered'
+  endif
+-%}
+
+<div
+  id="StackTrace-{{ section.id }}"
+  class="{{ wrapper_classes }} spacing-style section-content-wrapper"
+  style="
+    {% render 'spacing-style', settings: section.settings %}
+    --stack-trace-accent: {{ section.settings.accent_color | default: '#7cf3a0' }};
+  "
+>
+  <ol class="stack-trace__frames">
+    {% content_for 'blocks' %}
+  </ol>
+</div>
+
+{% stylesheet %}
+  .stack-trace {
+    --stack-trace-bg: #f4f0ea;
+    --stack-trace-fg: #1f1a14;
+    --stack-trace-border: rgb(0 0 0 / 12%);
+    --stack-trace-font: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    background: var(--stack-trace-bg);
+    color: var(--stack-trace-fg);
+    border: 1px solid var(--stack-trace-border);
+    border-radius: 6px;
+    padding: 20px 24px;
+    font-family: var(--stack-trace-font);
+  }
+
+  .stack-trace--terminal {
+    --stack-trace-bg: #0d1117;
+    --stack-trace-fg: #d6e2f0;
+    --stack-trace-border: #1f2937;
+    --stack-trace-font: 'JetBrains Mono', ui-monospace, Menlo, monospace;
+  }
+
+  .stack-trace__frames {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    counter-reset: stack-trace-frame;
+    display: grid;
+    gap: 10px;
+  }
+
+  .stack-trace__frames > * {
+    counter-increment: stack-trace-frame;
+  }
+
+  .stack-trace--numbered .stack-trace-frame__label::before,
+  .stack-trace--numbered .stack-trace-product__name::before {
+    content: counter(stack-trace-frame, decimal) ': ';
+    color: var(--stack-trace-accent);
+    margin-right: 6px;
+    font-weight: 600;
+  }
+
+  .stack-trace--numbered .stack-trace-header + * .stack-trace-frame__label::before,
+  .stack-trace--numbered .stack-trace-header + * .stack-trace-product__name::before {
+    /* header is a real frame in the DOM order but shouldn't consume a number visually */
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "t:names.stack_trace",
+  "tag": "section",
+  "class": "section-wrapper stack-trace-wrapper",
+  "disabled_on": {
+    "groups": ["header", "footer"]
+  },
+  "blocks": [
+    {
+      "type": "@theme"
+    }
+  ],
+  "settings": [
+    {
+      "type": "paragraph",
+      "content": "t:content.stack_trace_intro"
+    },
+    {
+      "type": "select",
+      "id": "frame_style",
+      "label": "t:settings.stack_trace_frame_style",
+      "options": [
+        {
+          "value": "monospace",
+          "label": "t:options.stack_trace_monospace"
+        },
+        {
+          "value": "terminal",
+          "label": "t:options.stack_trace_terminal"
+        }
+      ],
+      "default": "monospace"
+    },
+    {
+      "type": "color",
+      "id": "accent_color",
+      "label": "t:settings.stack_trace_accent_color",
+      "default": "#7cf3a0"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_line_numbers",
+      "label": "t:settings.stack_trace_show_line_numbers",
+      "default": true
+    },
+    {
+      "type": "header",
+      "content": "t:content.padding"
+    },
+    {
+      "type": "range",
+      "id": "padding-block-start",
+      "label": "t:settings.top",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 32
+    },
+    {
+      "type": "range",
+      "id": "padding-block-end",
+      "label": "t:settings.bottom",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 32
+    },
+    {
+      "type": "range",
+      "id": "padding-inline-start",
+      "label": "t:settings.left",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 0
+    },
+    {
+      "type": "range",
+      "id": "padding-inline-end",
+      "label": "t:settings.right",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 0
+    }
+  ],
+  "presets": [
+    {
+      "name": "t:names.stack_trace",
+      "category": "t:categories.custom",
+      "blocks": {
+        "header": {
+          "type": "stack-trace-header",
+          "settings": {
+            "severity": "error",
+            "title": "t:text_defaults.stack_trace_header_title",
+            "subtitle": "t:text_defaults.stack_trace_header_subtitle"
+          }
+        },
+        "frame_origin": {
+          "type": "stack-trace-frame",
+          "settings": {
+            "frame_label": "t:text_defaults.stack_trace_frame_farm_label",
+            "caption": "t:text_defaults.stack_trace_frame_farm_caption",
+            "emphasis": false
+          }
+        },
+        "frame_process": {
+          "type": "stack-trace-frame",
+          "settings": {
+            "frame_label": "t:text_defaults.stack_trace_frame_process_label",
+            "caption": "t:text_defaults.stack_trace_frame_process_caption",
+            "emphasis": false
+          }
+        },
+        "frame_roast": {
+          "type": "stack-trace-frame",
+          "settings": {
+            "frame_label": "t:text_defaults.stack_trace_frame_roast_label",
+            "caption": "t:text_defaults.stack_trace_frame_roast_caption",
+            "emphasis": true,
+            "caption_color": "#b91c1c"
+          }
+        },
+        "product": {
+          "type": "stack-trace-product",
+          "settings": {
+            "product": "debug-brew",
+            "hint": "t:text_defaults.stack_trace_product_hint",
+            "show_price": true
+          }
+        }
+      },
+      "block_order": ["header", "frame_origin", "frame_process", "frame_roast", "product"],
+      "settings": {
+        "frame_style": "monospace",
+        "accent_color": "#0b7a3b",
+        "show_line_numbers": true,
+        "padding-block-start": 40,
+        "padding-block-end": 40
+      }
+    }
+  ]
+}
+{% endschema %}
