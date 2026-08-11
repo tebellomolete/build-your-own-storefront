@@ -1,0 +1,143 @@
+{%- liquid
+  assign product = closest.product
+  assign selected_variant = product.selected_or_first_available_variant
+  assign compare_at = selected_variant.compare_at_price
+  assign price = selected_variant.price
+  assign is_on_sale = false
+  if compare_at != blank and compare_at > price
+    assign is_on_sale = true
+    assign savings = compare_at | minus: price
+  endif
+
+  # Stretch B — hardcoded placeholder shaped like the future brew_notes metafield.
+  # Chained strip_html + truncate stands in for the real metafield read.
+  # TODO 1.4: replace brew_notes_placeholder with product.metafields.custom.brew_notes
+  assign brew_notes_placeholder = '<p>Chocolate malt, dried cherry, and a long syrupy finish. Best pulled as espresso or brewed as a V60 at a 1:16 ratio.</p>'
+  assign brew_notes = brew_notes_placeholder | strip_html | truncate: 90
+-%}
+
+{%- comment -%} TODO 1.4: replace with product.metafields.custom.brew_notes {%- endcomment -%}
+
+<div class="coffee-details spacing-style" {{ block.shopify_attributes }} style="{% render 'spacing-style', settings: block.settings %}">
+  {%- if product != blank -%}
+    {%- if block.settings.show_thumbnail and product.featured_image != blank -%}
+      <img
+        class="coffee-details__thumb"
+        src="{{ product.featured_image | image_url: width: 400 }}"
+        alt="{{ product.featured_image.alt | default: product.title | escape }}"
+        width="200"
+        height="200"
+        loading="lazy"
+      >
+    {%- endif -%}
+
+    {%- if is_on_sale -%}
+      <p class="coffee-details__badge coffee-details__badge--sale">
+        <strong>On sale</strong> — you save {{ savings | money }}
+      </p>
+    {%- else -%}
+      <p class="coffee-details__badge coffee-details__badge--fresh">
+        Fresh from the roaster
+      </p>
+    {%- endif -%}
+
+    {%- if block.settings.show_brew_notes -%}
+      <p class="coffee-details__brew-notes">
+        <em>Brew notes:</em> {{ brew_notes }}
+      </p>
+    {%- endif -%}
+
+    {% render 'coffee-unit-price', product: product, variant: selected_variant %}
+  {%- endif -%}
+</div>
+
+{%- comment -%}
+  Extension note for Assignment 1.3: the on-sale / fresh copy is currently
+  hardcoded. In 1.3 promote this block to a fully configurable section with
+  editable badge text and colour presets.
+{%- endcomment -%}
+
+<style>
+  .coffee-details { display: grid; gap: 8px; }
+  .coffee-details__thumb { border-radius: 4px; }
+  .coffee-details__badge { margin: 0; padding: 6px 10px; border-radius: 4px; display: inline-block; }
+  .coffee-details__badge--sale { background: #b91c1c; color: #fff; }
+  .coffee-details__badge--fresh { background: #f4f0ea; color: #3f2a14; }
+  .coffee-details__brew-notes { margin: 0; font-size: 0.9rem; opacity: 0.85; }
+  .coffee-unit-price { display: block; opacity: 0.7; font-size: 0.8rem; }
+</style>
+
+{% schema %}
+{
+  "name": "Coffee details",
+  "tag": null,
+  "settings": [
+    {
+      "type": "paragraph",
+      "content": "Dev Coffee spec panel: sale/fresh badge, brew-notes placeholder, and per-100g unit price."
+    },
+    {
+      "type": "checkbox",
+      "id": "show_thumbnail",
+      "label": "Show featured image thumbnail",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "show_brew_notes",
+      "label": "Show brew-notes placeholder",
+      "default": true
+    },
+    {
+      "type": "header",
+      "content": "Padding"
+    },
+    {
+      "type": "range",
+      "id": "padding-block-start",
+      "label": "Top",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 12
+    },
+    {
+      "type": "range",
+      "id": "padding-block-end",
+      "label": "Bottom",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 12
+    },
+    {
+      "type": "range",
+      "id": "padding-inline-start",
+      "label": "Left",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 0
+    },
+    {
+      "type": "range",
+      "id": "padding-inline-end",
+      "label": "Right",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 0
+    }
+  ],
+  "presets": [
+    {
+      "name": "Coffee details",
+      "category": "Product"
+    }
+  ]
+}
+{% endschema %}

@@ -1,0 +1,22 @@
+{%- doc -%}
+  Renders a "per 100g" unit-price line for a coffee product. Reused on the
+  product page (via blocks/coffee-details.liquid) and the collection card
+  (via blocks/coffee-card-unit-price.liquid) — extracted per Assignment 1.2
+  Stretch A so both surfaces share the same math and formatting.
+
+  @param {product} product - The product to price.
+  @param {variant} [variant] - Specific variant to use; defaults to the
+    product's selected_or_first_available_variant.
+{%- enddoc -%}
+
+{%- liquid
+  assign coffee_variant = variant | default: product.selected_or_first_available_variant
+  assign weight_g = coffee_variant.weight
+-%}
+
+{%- if coffee_variant != blank and weight_g and weight_g > 0 -%}
+  {%- assign per_100g = coffee_variant.price | times: 100.0 | divided_by: weight_g -%}
+  <small class="coffee-unit-price">
+    {{ per_100g | money }} / 100g
+  </small>
+{%- endif -%}

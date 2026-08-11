@@ -1,0 +1,31 @@
+{%- liquid
+  assign product = closest.product
+  assign selected_variant = product.selected_or_first_available_variant
+
+  # Stretch A — the per-100g math and money formatting live in
+  # snippets/coffee-unit-price.liquid so the product page and the
+  # collection card render an identical unit price.
+-%}
+
+<div class="coffee-card-unit-price" {{ block.shopify_attributes }}>
+  {% render 'coffee-unit-price', product: product, variant: selected_variant %}
+</div>
+
+{% schema %}
+{
+  "name": "Coffee unit price",
+  "tag": null,
+  "settings": [
+    {
+      "type": "paragraph",
+      "content": "Renders a per-100g price line on the collection card. Reads variant.weight; hidden when the variant has no weight."
+    }
+  ],
+  "presets": [
+    {
+      "name": "Coffee unit price",
+      "category": "Product"
+    }
+  ]
+}
+{% endschema %}

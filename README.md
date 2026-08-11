@@ -75,3 +75,62 @@ json
 }
 
 The `[liquid]` selector scopes the settings to Liquid files only, so JavaScript and JSON files continue to use their own default formatters. `editor.defaultFormatter` names the extension that should handle the formatting, and `editor.formatOnSave` triggers it on every `Cmd+S`.
+
+---
+
+# Assignment 1.2 — Liquid Fundamentals
+
+Shopify Theme Development Module · Day 2 · Editing Sections, Snippets & Filters
+
+Horizon 4.1.3 is blocks-first. There is no `sections/main-product.liquid` monolith to edit — the product page is `sections/product-information.liquid`, which renders individual blocks (`blocks/price.liquid`, `blocks/product-title.liquid`, `blocks/product-description.liquid`, `blocks/buy-buttons.liquid`, and so on). The collection page uses `sections/main-collection.liquid` and renders each product through `blocks/_product-card.liquid`, which delegates to `snippets/product-card.liquid`. Because Horizon's shipped blocks upgrade on theme updates, this assignment's edits go into **new** blocks (`blocks/coffee-details.liquid`, `blocks/coffee-card-unit-price.liquid`) and a **new** snippet (`snippets/coffee-unit-price.liquid`) rather than forking Horizon's stock files.
+
+## Filter Log
+
+Five distinct filters, each authored in files added this assignment. Every filter's effect is described in terms of Dev Coffee's real data (ZAR pricing, gram weights, dev-themed product copy) — not the generic Shopify filter behaviour.
+
+| Filter | Target file | What it changes on the page |
+| --- | --- | --- |
+| `money` | `blocks/coffee-details.liquid` | Formats the savings amount on the product-page badge — e.g. `compare_at_price − price = 4000` cents renders as `R40.00` next to "On sale" instead of the raw integer. |
+| `image_url` | `blocks/coffee-details.liquid` | Requests a 400-px-wide render of `product.featured_image` for the badge-panel thumbnail on the product page, so the CDN serves a small file instead of the full-resolution roast shot. |
+| `truncate` | `blocks/coffee-details.liquid` | Caps the hardcoded brew-notes placeholder (Stretch B) at 90 characters on the product page, so the tasting-note line never wraps past the badge panel. |
+| `strip_html` | `blocks/coffee-details.liquid` | Removes the wrapping `<p>` tags from the brew-notes placeholder before `truncate` runs, so the character budget isn't wasted on markup and no raw tags leak into the rendered output. |
+| `divided_by` | `snippets/coffee-unit-price.liquid` | Divides `variant.price × 100.0` by `variant.weight` (grams) to produce a per-100g price for each coffee bag — makes 250g vs 500g vs 1kg bags directly comparable on both the product page and the collection card. |
+
+Distribution: `money`, `image_url`, `truncate`, and `strip_html` are exercised on the product page via `blocks/coffee-details.liquid`. `divided_by` is exercised on the collection card via `blocks/coffee-card-unit-price.liquid`, which renders `snippets/coffee-unit-price.liquid`. The same snippet is also rendered from `blocks/coffee-details.liquid`, so `money` and `divided_by` both run on the product page too — the total of five distinct filter *names* is what the assignment counts.
+
+## Conditional Logic
+
+**Object property.** `closest.product.selected_or_first_available_variant.compare_at_price` compared to `.price`. This is the same field Shopify's admin exposes as "Compare-at price" — a variant-level number in cents, non-blank only when the merchant has set a strike-through price.
+
+**File.** `blocks/coffee-details.liquid`, wrapping the "badge" paragraph.
+
+**Branches.**
+
+- **True** (`compare_at_price != blank` and `compare_at_price > price`): renders a red "On sale — you save `{{ savings | money }}`" badge, where `savings = compare_at | minus: price`.
+- **False** (no compare-at price, or compare-at ≤ price): renders a beige "Fresh from the roaster" badge, so the block never collapses to empty markup and merchants get a visible confirmation the block is placed.
+
+Trip conditions: setting `compare_at_price` on any variant in Admin (e.g. bumping `debug-brew`'s 250g variant to a higher compare-at than its live price) forces the true branch. Clearing the compare-at price returns the false branch. Both branches were exercised in the local preview during Part 4 — see Verification Notes.
+
+## Verification Notes
+
+Ran `shopify theme dev` and opened `http://127.0.0.1:9292`. Both pages were confirmed live, not just read in the code:
+
+- **Product page** — `/products/debug-brew`. With `compare_at_price` set above `price` on the selected variant, the red **"On sale — you save R…"** badge rendered. Clearing the compare-at price switched the badge to the beige **"Fresh from the roaster"** message on reload. The `image_url: width: 400` thumbnail served a small file (verified in DevTools Network) instead of the full roast shot. The brew-notes line rendered as plain text — no `<p>` tags leaked — and cut at 90 characters with an ellipsis, confirming `strip_html` and `truncate` were both applied.
+- **Collection page** — `/collections/roast`. Each product card rendered a `R… / 100g` line under the price, computed from `variant.price × 100.0 ÷ variant.weight`. Products without a variant weight rendered no line (the snippet guards against `weight == 0`), which was visually confirmed with the `git-push` filters product (unit-priced items skip the line correctly).
+
+## Stretch A — Snippet Extraction
+
+The per-100g unit-price line is rendered in two places (`blocks/coffee-details.liquid` on the product page, `blocks/coffee-card-unit-price.liquid` on the collection card). Both call `{% render 'coffee-unit-price', product: product, variant: selected_variant %}` so the `divided_by` math and `money` formatting live in exactly one file — `snippets/coffee-unit-price.liquid`.
+
+**Why `render` over `include`.** `render` is scope-isolated: the snippet only sees the parameters passed to it, and mutations inside the snippet don't leak back to the caller. `include` shared the caller's variable scope, which made side-effects hard to reason about and made snippets unsafe to compose. Shopify deprecated `include` for exactly this reason — `render` is the supported tag going forward, and `include` was removed from the current Liquid reference.
+
+## Stretch B — Metafield-Shaped Filter
+
+`blocks/coffee-details.liquid` renders a hardcoded `brew_notes_placeholder` string wrapped in `<p>` tags, run through `strip_html | truncate: 90` to produce the "Brew notes:" line. The string is shaped the way `product.metafields.custom.brew_notes` will eventually be shaped (rich-text with wrapping tags), so the filter chain will not need to change once the real metafield exists.
+
+**Swap point.** Inside `blocks/coffee-details.liquid`, above the block markup:
+
+    {%- comment -%} TODO 1.4: replace with product.metafields.custom.brew_notes {%- endcomment -%}
+
+In Assignment 1.4, replace `brew_notes_placeholder` with `product.metafields.custom.brew_notes` and remove the placeholder assignment. The `strip_html | truncate: 90` chain stays as-is.
+
