@@ -4,7 +4,7 @@ Shopify Theme Development Module · Day 1 · Store Setup & Development Environme
 
 **Change notes.**
 
-1. **Theme migration.** Originally attempted with Shopify Dawn on a store named `my-store-yofcpcr4`. Per instructor guidance (Skye, Bitcube SDTP), migrated to Horizon.
+1. **Theme migration.** Originally attempted with Shopify Dawn on a store named `my-store-yofcpcr4`. Per instructor guidance, migrated to Horizon.
 2. **Store rebuild.** The original store carried leftover schema data from prior themes that produced persistent upload errors on Horizon 4.1.3. Fixed by provisioning a clean store (`dev-coffee-46ztlwtt.myshopify.com`) with no theme history — CLI now uploads cleanly.
 3. **Brand direction.** The niche stayed as specialty coffee, but the brand was retooled from a generalist audience (home baristas) toward developers — the training programme is a developer programme, and the audience shift makes the store a stronger portfolio piece by the end of the module.
 
@@ -88,15 +88,15 @@ Horizon 4.1.3 is blocks-first. There is no `sections/main-product.liquid` monoli
 
 Five distinct filters, each authored in files added this assignment. Every filter's effect is described in terms of Dev Coffee's real data (ZAR pricing, gram weights, dev-themed product copy) — not the generic Shopify filter behaviour.
 
-| Filter | Target file | What it changes on the page |
-| --- | --- | --- |
-| `money` | `blocks/coffee-details.liquid` | Formats the savings amount on the product-page badge — e.g. `compare_at_price − price = 4000` cents renders as `R40.00` next to "On sale" instead of the raw integer. |
-| `image_url` | `blocks/coffee-details.liquid` | Requests a 400-px-wide render of `product.featured_image` for the badge-panel thumbnail on the product page, so the CDN serves a small file instead of the full-resolution roast shot. |
-| `truncate` | `blocks/coffee-details.liquid` | Caps the hardcoded brew-notes placeholder (Stretch B) at 90 characters on the product page, so the tasting-note line never wraps past the badge panel. |
-| `strip_html` | `blocks/coffee-details.liquid` | Removes the wrapping `<p>` tags from the brew-notes placeholder before `truncate` runs, so the character budget isn't wasted on markup and no raw tags leak into the rendered output. |
+| Filter       | Target file                         | What it changes on the page                                                                                                                                                                                        |
+| ------------ | ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `money`      | `blocks/coffee-details.liquid`      | Formats the savings amount on the product-page badge — e.g. `compare_at_price − price = 4000` cents renders as `R40.00` next to "On sale" instead of the raw integer.                                              |
+| `image_url`  | `blocks/coffee-details.liquid`      | Requests a 400-px-wide render of `product.featured_image` for the badge-panel thumbnail on the product page, so the CDN serves a small file instead of the full-resolution roast shot.                             |
+| `truncate`   | `blocks/coffee-details.liquid`      | Caps the hardcoded brew-notes placeholder (Stretch B) at 90 characters on the product page, so the tasting-note line never wraps past the badge panel.                                                             |
+| `strip_html` | `blocks/coffee-details.liquid`      | Removes the wrapping `<p>` tags from the brew-notes placeholder before `truncate` runs, so the character budget isn't wasted on markup and no raw tags leak into the rendered output.                              |
 | `divided_by` | `snippets/coffee-unit-price.liquid` | Divides `variant.price × 100.0` by `variant.weight` (grams) to produce a per-100g price for each coffee bag — makes 250g vs 500g vs 1kg bags directly comparable on both the product page and the collection card. |
 
-Distribution: `money`, `image_url`, `truncate`, and `strip_html` are exercised on the product page via `blocks/coffee-details.liquid`. `divided_by` is exercised on the collection card via `blocks/coffee-card-unit-price.liquid`, which renders `snippets/coffee-unit-price.liquid`. The same snippet is also rendered from `blocks/coffee-details.liquid`, so `money` and `divided_by` both run on the product page too — the total of five distinct filter *names* is what the assignment counts.
+Distribution: `money`, `image_url`, `truncate`, and `strip_html` are exercised on the product page via `blocks/coffee-details.liquid`. `divided_by` is exercised on the collection card via `blocks/coffee-card-unit-price.liquid`, which renders `snippets/coffee-unit-price.liquid`. The same snippet is also rendered from `blocks/coffee-details.liquid`, so `money` and `divided_by` both run on the product page too — the total of five distinct filter _names_ is what the assignment counts.
 
 ## Conditional Logic
 
@@ -152,11 +152,11 @@ Horizon composes pages from sections that host blocks. This assignment ships a n
 
 ### Block inventory
 
-| Block type | Filename | Purpose | Reusable? | Preset? |
-| --- | --- | --- | --- | --- |
-| `stack-trace-header` | `blocks/stack-trace-header.liquid` | The "exception" title bar — severity class swap, title, subtitle. | Reusable in any section that accepts `@theme`. | Yes |
-| `stack-trace-frame` | `blocks/stack-trace-frame.liquid` | A single stack frame with a code-flavoured label (`at Farm.origin(...)`) and human-readable caption. Emphasis toggle marks a highlighted frame and reveals a caption-colour control (see Stretch A). | Reusable. | Yes |
-| `stack-trace-product` | `blocks/stack-trace-product.liquid` | Product-referencing frame — picks a real Dev Coffee product and renders its title, `product.price \| money`, and a "recommended brew" hint. | Section-specific in intent (needs the trace layout to read correctly), but valid anywhere `@theme` is accepted. | Yes |
+| Block type            | Filename                            | Purpose                                                                                                                                                                                              | Reusable?                                                                                                       | Preset? |
+| --------------------- | ----------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- | ------- |
+| `stack-trace-header`  | `blocks/stack-trace-header.liquid`  | The "exception" title bar — severity class swap, title, subtitle.                                                                                                                                    | Reusable in any section that accepts `@theme`.                                                                  | Yes     |
+| `stack-trace-frame`   | `blocks/stack-trace-frame.liquid`   | A single stack frame with a code-flavoured label (`at Farm.origin(...)`) and human-readable caption. Emphasis toggle marks a highlighted frame and reveals a caption-colour control (see Stretch A). | Reusable.                                                                                                       | Yes     |
+| `stack-trace-product` | `blocks/stack-trace-product.liquid` | Product-referencing frame — picks a real Dev Coffee product and renders its title, `product.price \| money`, and a "recommended brew" hint.                                                          | Section-specific in intent (needs the trace layout to read correctly), but valid anywhere `@theme` is accepted. | Yes     |
 
 Each block file carries a `{% doc %}` header. Blocks are added dynamically through the editor; the docs sit on the file so future authors can still reference the block statically via `content_for 'block', type: '...', id: '...'` without re-reading the schema.
 
@@ -164,21 +164,21 @@ Each block file carries a `{% doc %}` header. Blocks are added dynamically throu
 
 Combined settings across the section and blocks total 13. Each setting has a visible effect — none is ornamental.
 
-| id | type | file | visible effect | var vs class |
-| --- | --- | --- | --- | --- |
-| `frame_style` | `select` (`monospace` / `terminal`) | `sections/stack-trace.liquid` | Swaps the whole panel's look between a light monospace card and a dark terminal. Changes background, foreground, border, and font-family together. | Class swap on the section wrapper (`stack-trace--terminal`). |
-| `accent_color` | `color` | `sections/stack-trace.liquid` | Colours the numeric prefix in front of each frame (`0:`, `1:`, `2:`) and the emphasised frame's left border. | CSS variable `--stack-trace-accent` on the section wrapper (single property). |
-| `show_line_numbers` | `checkbox` | `sections/stack-trace.liquid` | Toggles the `N:` numeric prefix on each frame. | Class swap (`stack-trace--numbered`) — the CSS counter and `::before` selector only apply when the class is present. |
-| `severity` | `select` (`info` / `warning` / `error`) | `blocks/stack-trace-header.liquid` | Swaps header background, text colour, border, and the `[i]` / `[!]` / `[x]` prefix glyph. | Class swap (`stack-trace-header--info` / `--warning` / `--error`). |
-| `title` | `text` | `blocks/stack-trace-header.liquid` | Header title text. | — |
-| `subtitle` | `text` | `blocks/stack-trace-header.liquid` | Subtitle line under the title. | — |
-| `frame_label` | `text` | `blocks/stack-trace-frame.liquid` | The code-flavoured `at Class.method(args)` line. | — |
-| `caption` | `text` | `blocks/stack-trace-frame.liquid` | Human-readable caption under the label. | — |
-| `emphasis` | `checkbox` | `blocks/stack-trace-frame.liquid` | Bolds the frame, tints the border with `--stack-trace-accent`, adds a subtle background, and reveals `caption_color`. | Class swap (`stack-trace-frame--emphasis`). |
-| `caption_color` | `color` | `blocks/stack-trace-frame.liquid` | Caption text colour. **Stretch A** — only visible when `emphasis == true`. | CSS variable `--stack-trace-frame-caption-color` on the frame root. |
-| `product` | `product` | `blocks/stack-trace-product.liquid` | The Dev Coffee product surfaced by this frame. Preset seeds `debug-brew`. | — |
-| `hint` | `text` | `blocks/stack-trace-product.liquid` | "Recommended brew" caption under the product name. | — |
-| `show_price` | `checkbox` | `blocks/stack-trace-product.liquid` | Toggles the `product.price \| money` span next to the product name. | — |
+| id                  | type                                    | file                                | visible effect                                                                                                                                     | var vs class                                                                                                         |
+| ------------------- | --------------------------------------- | ----------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| `frame_style`       | `select` (`monospace` / `terminal`)     | `sections/stack-trace.liquid`       | Swaps the whole panel's look between a light monospace card and a dark terminal. Changes background, foreground, border, and font-family together. | Class swap on the section wrapper (`stack-trace--terminal`).                                                         |
+| `accent_color`      | `color`                                 | `sections/stack-trace.liquid`       | Colours the numeric prefix in front of each frame (`0:`, `1:`, `2:`) and the emphasised frame's left border.                                       | CSS variable `--stack-trace-accent` on the section wrapper (single property).                                        |
+| `show_line_numbers` | `checkbox`                              | `sections/stack-trace.liquid`       | Toggles the `N:` numeric prefix on each frame.                                                                                                     | Class swap (`stack-trace--numbered`) — the CSS counter and `::before` selector only apply when the class is present. |
+| `severity`          | `select` (`info` / `warning` / `error`) | `blocks/stack-trace-header.liquid`  | Swaps header background, text colour, border, and the `[i]` / `[!]` / `[x]` prefix glyph.                                                          | Class swap (`stack-trace-header--info` / `--warning` / `--error`).                                                   |
+| `title`             | `text`                                  | `blocks/stack-trace-header.liquid`  | Header title text.                                                                                                                                 | —                                                                                                                    |
+| `subtitle`          | `text`                                  | `blocks/stack-trace-header.liquid`  | Subtitle line under the title.                                                                                                                     | —                                                                                                                    |
+| `frame_label`       | `text`                                  | `blocks/stack-trace-frame.liquid`   | The code-flavoured `at Class.method(args)` line.                                                                                                   | —                                                                                                                    |
+| `caption`           | `text`                                  | `blocks/stack-trace-frame.liquid`   | Human-readable caption under the label.                                                                                                            | —                                                                                                                    |
+| `emphasis`          | `checkbox`                              | `blocks/stack-trace-frame.liquid`   | Bolds the frame, tints the border with `--stack-trace-accent`, adds a subtle background, and reveals `caption_color`.                              | Class swap (`stack-trace-frame--emphasis`).                                                                          |
+| `caption_color`     | `color`                                 | `blocks/stack-trace-frame.liquid`   | Caption text colour. **Stretch A** — only visible when `emphasis == true`.                                                                         | CSS variable `--stack-trace-frame-caption-color` on the frame root.                                                  |
+| `product`           | `product`                               | `blocks/stack-trace-product.liquid` | The Dev Coffee product surfaced by this frame. Preset seeds `debug-brew`.                                                                          | —                                                                                                                    |
+| `hint`              | `text`                                  | `blocks/stack-trace-product.liquid` | "Recommended brew" caption under the product name.                                                                                                 | —                                                                                                                    |
+| `show_price`        | `checkbox`                              | `blocks/stack-trace-product.liquid` | Toggles the `product.price \| money` span next to the product name.                                                                                | —                                                                                                                    |
 
 ## Schema Notes
 
@@ -233,15 +233,18 @@ The assignment PDF's wording ("into locales/en.default.json") is honoured in spi
 **`locales/en.default.schema.json` — `categories`:** reused existing `categories.custom` for presets, no new category key added.
 
 **`locales/en.default.schema.json` — `content`:**
+
 - `content.stack_trace_intro` — "Reads like a call stack — one frame per step in the bean's journey from farm to cup."
 
 **`locales/en.default.schema.json` — `names`:**
+
 - `names.stack_trace` — "Stack trace"
 - `names.stack_trace_header` — "Stack trace header"
 - `names.stack_trace_frame` — "Stack trace frame"
 - `names.stack_trace_product` — "Stack trace product frame"
 
 **`locales/en.default.schema.json` — `options`:**
+
 - `options.stack_trace_monospace` — "Monospace card"
 - `options.stack_trace_terminal` — "Terminal"
 - `options.stack_trace_info` — "Info"
@@ -249,6 +252,7 @@ The assignment PDF's wording ("into locales/en.default.json") is honoured in spi
 - `options.stack_trace_error` — "Error"
 
 **`locales/en.default.schema.json` — `settings`:**
+
 - `settings.stack_trace_frame_style` — "Frame style"
 - `settings.stack_trace_accent_color` — "Accent color"
 - `settings.stack_trace_show_line_numbers` — "Show line numbers"
@@ -263,6 +267,7 @@ The assignment PDF's wording ("into locales/en.default.json") is honoured in spi
 Reused existing keys where they already covered the semantics: `settings.title`, `settings.color`, `settings.product`, `settings.top`, `settings.bottom`, `settings.left`, `settings.right`, `content.padding`, `categories.custom`.
 
 **`locales/en.default.schema.json` — `text_defaults`:**
+
 - `text_defaults.stack_trace_header_title` — "Uncaught FreshBeanException: peak flavour window opens in 12h"
 - `text_defaults.stack_trace_header_subtitle` — "Traceback (most recent frame last)"
 - `text_defaults.stack_trace_frame_farm_label` — "at Farm.origin(Yirgacheffe, 1900m)"
@@ -274,7 +279,7 @@ Reused existing keys where they already covered the semantics: `settings.title`,
 - `text_defaults.stack_trace_product_hint` — "Recommended: V60 at a 1:16 ratio"
 
 **`locales/en.default.json` — `content`:**
+
 - `content.stack_trace_product_placeholder` — "Pick a product in the theme editor" (rendered by `blocks/stack-trace-product.liquid` only in `request.design_mode`, so real shoppers never see it).
 
 **Sentence case confirmed.** Every added value starts with a capital and continues in sentence case; no title-cased phrases (`Frame Style`, `Show Line Numbers`) were used. Proper nouns (`FreshBeanException`, `Farm.origin`, `Mill.process`, `Roaster.roast`, `V60`, `Yirgacheffe`) retain their real casing, which is the correct convention for identifiers/place names inside sentence-case sentences.
-
