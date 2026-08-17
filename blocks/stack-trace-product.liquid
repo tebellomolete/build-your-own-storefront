@@ -3,9 +3,11 @@
   renders name, optional price, a "recommended brew" hint, and — added
   in Assignment 1.4 — structured product metadata: an `origin_story`
   metaobject reference list (looped, one stack-frame-idiom line per
-  entry) and the `custom.brew_ratio` product metafield (rendered as a
-  spec line). Both are guarded independently so unset fields produce
-  no wrappers. The list pattern matches `blocks/disclosures.liquid`.
+  entry, with the nested `processing_method` metaobject rendered
+  inline after each origin when set), and the `custom.brew_ratio`
+  product metafield (rendered as a spec line). All three levels are
+  guarded independently so unset fields produce no wrappers. The list
+  pattern matches `blocks/disclosures.liquid`.
 
   @setting product: product picker
   @setting hint: caption under the product name
@@ -35,8 +37,10 @@
     </a>
     {%- if origins != blank -%}
       {%- for origin in origins -%}
+        {%- assign process = origin.process.value -%}
         <p class="stack-trace-product__origin">
           at Origin({{ origin.region.value }}, {{ origin.altitude_m.value }}m) — {{ origin.farm_name.value }}
+          {%- if process != blank %} · {{ process.method_name.value }}{%- endif -%}
         </p>
       {%- endfor -%}
     {%- endif -%}

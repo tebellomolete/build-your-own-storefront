@@ -451,3 +451,75 @@ Same guard shape as `disclosures.liquid` (`{%- if disclosures != blank -%}` arou
 - Ran `shopify theme check` after the code change: 0 offenses on `blocks/stack-trace-product.liquid`. Pre-existing whole-theme `MatchingTranslations` count unchanged.
 - Live verification pass in the local preview (values to fill in during the Part 4 sweep): the Debug & Brew block now shows both origin lines stacked, in the order the entries appear in the metafield list. Reordering the list in Admin re-orders the lines on reload.
 
+## Stretch B — Metaobject referencing a metaobject
+
+The `origin_story` metaobject is extended with a `process` field of type **Metaobject reference** pointing at a new metaobject type, `processing_method`. The nested method's name renders inline at the tail of the origin line: `at Origin(Yirgacheffe, 1900-2100m) — Konga Cooperative · Washed`.
+
+### The chain and why it earns its keep
+
+```
+product ──[custom.origin_story: list of ref]──▶ origin_story ──[process: ref]──▶ processing_method
+```
+
+Processing method is a genuinely separate domain concept from origin, not a property of it. A single farm (like Konga Cooperative) can ship a `Washed`, a `Natural`, and an `Anaerobic` lot in the same harvest season — same origin, three different processing methods. Flattening `process` into `origin_story` would either force one entry per (origin × process) combination (data explosion) or force a naming lie ("Konga Cooperative Washed" as a farm name). Referencing a separate `processing_method` metaobject means:
+
+- One `Washed` entry updates its `fermentation_hours` once and every origin that references it inherits the change.
+- Adding a new processing method (`Anaerobic natural`) doesn't require touching any `origin_story` entry that doesn't use it.
+- Origin metadata stays about the farm; process metadata stays about the technique. Each metaobject has a single, clean responsibility.
+
+For Dev Coffee specifically, this matters because the store's whole framing is "one frame per step in the bean's journey" — origin and process are separate frames in that journey. The data model matches the section idiom exactly.
+
+### Admin steps
+
+**Create `processing_method`.** Content > Metaobjects > Add definition.
+
+- Name: **Processing method**
+- Type: `processing_method`
+- Fields:
+  1. `method_name` — Single line text
+  2. `fermentation_hours` — Integer (unsigned; allow zero for `Natural` methods that skip fermentation)
+- Save.
+
+**Create two entries.** Content > Metaobjects > Processing method > Add entry.
+
+- **Entry 1** (`washed`):
+  - `method_name`: `Washed`
+  - `fermentation_hours`: `48`
+- **Entry 2** (`natural`):
+  - `method_name`: `Natural`
+  - `fermentation_hours`: `0`
+
+Save both.
+
+**Extend `origin_story`.** Content > Metaobjects > Origin story > Edit definition > Add field.
+
+- Field key: `process`
+- Type: **Metaobject** (Metaobject reference) — target type `Processing method`. **One value**.
+- Save.
+
+**Populate the chain.** Content > Metaobjects > Origin story > Konga Cooperative > edit > set `process` = `Washed`. Save. (Leave Finca La Providencia's `process` unset so the blank-state guard on the nested reference is also exercised live.)
+
+### Code change
+
+`blocks/stack-trace-product.liquid`:
+
+```liquid
+{% for origin in origins %}
+  {% assign process = origin.process.value %}
+  <p class="stack-trace-product__origin">
+    at Origin({{ origin.region.value }}, {{ origin.altitude_m.value }}m) — {{ origin.farm_name.value }}
+    {% if process != blank %} · {{ process.method_name.value }}{% endif %}
+  </p>
+{% endfor %}
+```
+
+The nested reference is guarded independently of the outer origin loop: an origin without a `process` still renders, just without the trailing ` · <method>` suffix. This is the same discipline every other Day 4 field uses.
+
+### Verification
+
+- `shopify theme check` after the change: 0 offenses on `blocks/stack-trace-product.liquid`. Whole-theme count unchanged from Day 3's baseline.
+- Live verification (values to fill in during the Part 4 sweep):
+  - Konga Cooperative row on the Debug & Brew block renders `at Origin(Yirgacheffe, 1900-2100m) — Konga Cooperative · Washed`.
+  - Finca La Providencia row renders `at Origin(Huehuetenango, 1600-1800m) — Finca La Providencia` — no trailing separator, no orphan `·` glyph.
+  - Setting the Konga entry's `process` to unset (temporarily) drops the ` · Washed` tail without collapsing the origin line.
+
