@@ -103,4 +103,10 @@
   .coffee-free-shipping-bar--unlocked .coffee-free-shipping-bar__fill {
     background-color: var(--color-success);
   }
+
+  @media (prefers-reduced-motion: reduce) {
+    .coffee-free-shipping-bar__fill {
+      transition: none;
+    }
+  }
 {% endstylesheet %}
