@@ -8,8 +8,16 @@
 {% enddoc %}
 
 {%- liquid
+  # Section-scoped override wins when the drawer section opts in. Otherwise
+  # fall back to the global cart-group setting so the /cart page and the
+  # drawer stay in sync. See Stretch A rationale in README-assignment-1.5.md.
   assign shipping_enabled = settings.coffee_free_shipping_enabled
   assign threshold = settings.coffee_free_shipping_threshold
+
+  if section.settings.coffee_free_shipping_enabled
+    assign shipping_enabled = section.settings.coffee_free_shipping_enabled
+    assign threshold = section.settings.coffee_free_shipping_threshold
+  endif
 -%}
 
 {%- if shipping_enabled and threshold > 0 and cart.item_count > 0 -%}

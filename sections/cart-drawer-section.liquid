@@ -3,6 +3,27 @@
 
 {% schema %}
 {
-  "name": "t:names.cart_drawer"
+  "name": "t:names.cart_drawer",
+  "settings": [
+    {
+      "type": "header",
+      "content": "t:content.cart_features"
+    },
+    {
+      "type": "checkbox",
+      "id": "coffee_free_shipping_enabled",
+      "label": "t:settings.coffee_free_shipping_enabled",
+      "info": "t:info.coffee_free_shipping_section_scope",
+      "default": false
+    },
+    {
+      "type": "number",
+      "id": "coffee_free_shipping_threshold",
+      "label": "t:settings.coffee_free_shipping_threshold",
+      "info": "t:info.coffee_free_shipping_threshold",
+      "default": 0,
+      "visible_if": "{{ section.settings.coffee_free_shipping_enabled == true }}"
+    }
+  ]
 }
 {% endschema %}

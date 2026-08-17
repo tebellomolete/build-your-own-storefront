@@ -110,16 +110,16 @@ All arithmetic is cent-to-cent; only display strings run through `money_with_cur
 
 ## Stretch A — Section-scoped rebuild and rationale
 
-Rebuilt the same two settings at the **section scope** on `sections/cart-drawer-section.liquid` (schema `settings` array), then swapped the snippet reads from `settings.…` to `section.settings.…`.
+Rebuilt the same two settings at the **section scope** by adding a `settings` block to the `{% schema %}` in `sections/cart-drawer-section.liquid`. The snippet now checks `section.settings.coffee_free_shipping_enabled` first; if the merchant has flipped that on, it uses the section values. Otherwise it falls back to the global setting. Both scopes are live on this branch so the difference is real, not theoretical.
 
 **Which is actually correct: global.** My first instinct was global and it stayed correct after the exercise. Reasoning:
 
-- The threshold is a business rule (shipping cost break-point), not a UI dial. It should be set once, in one place, and read wherever the store surfaces the number.
-- Section-scoping puts the setting on the drawer only. The `/cart` page would need its own copy (added to `sections/main-cart.liquid`) and the two would drift as soon as one merchant updates one and forgets the other. Two sources of truth for one policy.
-- Section-scoped settings live in template JSON (`templates/*.json`), which Shopify's GitHub sync writes back on every merchant edit. Global settings live in `config/settings_data.json`. Both sync, but the global one is a single file the merchant knows to look at; the section-scoped one is buried inside whichever template happens to include the section.
-- Global also plays nicely with the enable checkbox — flipping one switch turns the feature off everywhere.
+- The threshold is a business rule (shipping cost break-point), not a UI dial. It should be set once, in one place, and read wherever the store surfaces the number. The drawer and the `/cart` page are two views of the same cart — a shopper who sees "R120 to go" in the drawer and "R220 to go" on the cart page will assume the site is broken, and they'll be right.
+- Section-scoping puts the setting on the drawer section only. To keep the cart page consistent I'd need to add another copy on `sections/main-cart.liquid` (currently there's no equivalent bar there, but the moment someone builds one, they inherit the drift). Two sources of truth for one policy.
+- Section-scoped settings live in template JSON (`templates/*.json` / `sections/*.json`), which Shopify's GitHub sync writes back on every merchant edit. Global settings live in `config/settings_data.json`. Both sync, but the global one is a single file the merchant already looks at; the section-scoped one is buried inside whichever template happens to include the section — invisible on the theme editor's global settings page.
+- Global also plays nicely with the enable checkbox — one switch, everywhere.
 
-The section-scoped version is preserved on this branch so both live implementations can be compared side by side; the shipping snippet reads from the section-scoped setting when present and falls back to the global.
+The section-scoped setting is left in place as an escape hatch: a merchant could, in theory, use it to promote a "drawer-only" flash offer without touching the cart page. That's the only justification for keeping it around, and I'd expect us to remove it the first time it's used and forgotten about.
 
 ---
 

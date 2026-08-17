@@ -232,6 +232,7 @@
     "checkout_buttons": "Allows buyers to check out faster and can improve conversion. [Learn more](https://help.shopify.com/manual/online-store/dynamic-checkout)",
     "coffee_free_shipping_enabled": "Shows a progress bar in the cart drawer that tracks progress toward the free-shipping threshold.",
     "coffee_free_shipping_threshold": "Cart subtotal at which free shipping unlocks. Entered in whole store-currency units (e.g. 750 for R750). Set to 0 to hide the bar without disabling the setting.",
+    "coffee_free_shipping_section_scope": "Overrides the global free-shipping threshold for the cart drawer only. Leave off unless you specifically need the drawer to differ from the cart page.",
     "custom_heading": "Custom heading",
     "custom_liquid": "Add app snippets or other code to create advanced customizations. [Learn more](https://shopify.dev/docs/api/liquid)",
     "edit_button_style_in_theme_settings": "Edit primary and secondary button styles in [theme settings](/editor?context=theme&category=buttons)",
