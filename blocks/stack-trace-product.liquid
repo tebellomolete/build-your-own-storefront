@@ -2,9 +2,10 @@
   A product-referencing stack frame. Picks a Dev Coffee product and
   renders name, optional price, a "recommended brew" hint, and — added
   in Assignment 1.4 — structured product metadata: an `origin_story`
-  metaobject reference (rendered as a stack-frame idiom line) and the
-  `custom.brew_ratio` product metafield (rendered as a spec line). Both
-  are guarded independently so unset fields produce no wrappers.
+  metaobject reference list (looped, one stack-frame-idiom line per
+  entry) and the `custom.brew_ratio` product metafield (rendered as a
+  spec line). Both are guarded independently so unset fields produce
+  no wrappers. The list pattern matches `blocks/disclosures.liquid`.
 
   @setting product: product picker
   @setting hint: caption under the product name
@@ -14,10 +15,10 @@
 {%- liquid
   assign product = block.settings.product
   assign brew_ratio = nil
-  assign origin = nil
+  assign origins = nil
   if product != blank
     assign brew_ratio = product.metafields.custom.brew_ratio
-    assign origin = product.metafields.custom.origin_story.value
+    assign origins = product.metafields.custom.origin_story.value
   endif
 -%}
 
@@ -32,10 +33,12 @@
         <span class="stack-trace-product__price">{{ product.price | money }}</span>
       {%- endif -%}
     </a>
-    {%- if origin != blank -%}
-      <p class="stack-trace-product__origin">
-        at Origin({{ origin.region.value }}, {{ origin.altitude_m.value }}m) — {{ origin.farm_name.value }}
-      </p>
+    {%- if origins != blank -%}
+      {%- for origin in origins -%}
+        <p class="stack-trace-product__origin">
+          at Origin({{ origin.region.value }}, {{ origin.altitude_m.value }}m) — {{ origin.farm_name.value }}
+        </p>
+      {%- endfor -%}
     {%- endif -%}
     {%- if brew_ratio != blank -%}
       <p class="stack-trace-product__spec">

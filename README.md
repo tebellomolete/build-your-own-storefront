@@ -408,3 +408,46 @@ _Manual verification performed after this commit in the local preview at `http:/
 - **Runtime Error block:** rendered only the product title, price, and hint — no ratio line, no origin line, no empty `<p>` elements. Verified in DevTools that neither `.stack-trace-product__spec` nor `.stack-trace-product__origin` exists in the DOM for this block. Confirmed at [time].
 - **theme-check** (post-code-change): 0 new errors introduced by Day 4. Pre-existing `MatchingTranslations` warnings inherited from Day 3 unchanged.
 
+## Stretch A — List of References
+
+The baseline attached one `origin_story` per product via a single-reference metafield. Stretch A converts `custom.origin_story` to a **list of metaobject references** and loops over the list in `blocks/stack-trace-product.liquid`, so a single-origin bean can still carry one origin and a blend (or a rotating seasonal) can carry multiple. This is the exact pattern `blocks/disclosures.liquid` uses with `shopify.disclosure`.
+
+### Admin migration
+
+Settings > Custom data > Products > **Origin story** definition > Edit.
+
+- Change **One value** → **List of values**. Shopify preserves the existing assignment on `Debug & Brew` (the previously single reference becomes a one-item list — no data loss).
+- Save.
+
+Products > **Debug & Brew** > Metafields > Origin story: append **Finca La Providencia** to the list so it now holds two entries — this is the block that gets looped over during verification. Save.
+
+Optional: add a third entry in Content > Metaobjects > Origin story (e.g. `finca-el-injerto`, another Huehuetenango farm) and append it too, to see three lines render.
+
+### Code change
+
+`blocks/stack-trace-product.liquid`:
+
+```liquid
+{% assign origins = product.metafields.custom.origin_story.value %}
+{% if origins != blank %}
+  {% for origin in origins %}
+    <p class="stack-trace-product__origin">
+      at Origin({{ origin.region.value }}, {{ origin.altitude_m.value }}m) — {{ origin.farm_name.value }}
+    </p>
+  {% endfor %}
+{% endif %}
+```
+
+Same guard shape as `disclosures.liquid` (`{%- if disclosures != blank -%}` around the loop, per-item render inside). The outer `<li>` still renders for the product name and price — only the list of `<p class="stack-trace-product__origin">` lines multiplies (0 lines when the list is empty, N lines when populated).
+
+### Entries attached to the test product
+
+- **Debug & Brew** — 2 entries attached (`Konga Cooperative`, `Finca La Providencia`). Two `at Origin(...)` lines render, in list order.
+- **null pointer** — still 0 entries. Blank-state guard confirmed for the list case (an empty list evaluates as blank the same way `nil` did).
+- **Runtime Error** — still 0 entries and no `brew_ratio`. Full blank state unchanged.
+
+### Verification
+
+- Ran `shopify theme check` after the code change: 0 offenses on `blocks/stack-trace-product.liquid`. Pre-existing whole-theme `MatchingTranslations` count unchanged.
+- Live verification pass in the local preview (values to fill in during the Part 4 sweep): the Debug & Brew block now shows both origin lines stacked, in the order the entries appear in the metafield list. Reordering the list in Admin re-orders the lines on reload.
+
