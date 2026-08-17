@@ -1531,6 +1531,21 @@
       },
       {
         "type": "checkbox",
+        "id": "coffee_free_shipping_enabled",
+        "label": "t:settings.coffee_free_shipping_enabled",
+        "info": "t:info.coffee_free_shipping_enabled",
+        "default": true
+      },
+      {
+        "type": "number",
+        "id": "coffee_free_shipping_threshold",
+        "label": "t:settings.coffee_free_shipping_threshold",
+        "info": "t:info.coffee_free_shipping_threshold",
+        "default": 750,
+        "visible_if": "{{ settings.coffee_free_shipping_enabled == true }}"
+      },
+      {
+        "type": "checkbox",
         "id": "show_cart_note",
         "label": "t:settings.seller_note",
         "default": false
