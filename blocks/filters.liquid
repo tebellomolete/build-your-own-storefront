@@ -113,7 +113,20 @@
       style="{% render 'spacing-style', settings: block_settings %}{% if block_settings.text_label_case == 'uppercase' %} --facet-label-transform: uppercase;{% endif %}"
     >
       {% if block_settings.enable_filtering %}
-        <h4 class="facets--filters-title">{{ 'content.filters' | t }}</h4>
+        <h4 class="facets--filters-title">
+          {{ 'content.filters' | t }}
+          {%- comment -%} Stretch A — active filter count badge. Reuses the top-level `total_active_values` computed at line 31 (loop at 44-58) and the existing `.filter-count-bubble` styles below — no counting logic duplicated, no new CSS classes. {%- endcomment -%}
+          {%- if total_active_values > 0 -%}
+            <span
+              class="filter-count-bubble filter-count-bubble--inline"
+              aria-label="{{ 'accessibility.filter_count' | t: count: total_active_values }}"
+            >
+              <span class="filter-count-bubble__background"></span>
+              <span class="filter-count-bubble__text" aria-hidden="true">{{ total_active_values }}</span>
+            </span>
+          {%- endif -%}
+          {%- comment -%} End Stretch A {%- endcomment -%}
+        </h4>
       {% endif %}
 
       <div
@@ -1293,6 +1306,14 @@
     border-inline-start: var(--style-border-width) solid rgb(var(--color-foreground-rgb) / var(--opacity-10-25));
     height: var(--font-paragraph--size);
     position: absolute;
+  }
+
+  /* Stretch A — inline layout for the count badge next to the desktop "Filters" heading.
+     Scoped with :has() so the base h4 layout is untouched when no badge is present. */
+  .facets--filters-title:has(.filter-count-bubble--inline) {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--gap-xs);
   }
 {% endstylesheet %}
 

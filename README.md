@@ -528,3 +528,159 @@ The nested reference is guarded independently of the outer origin loop: an origi
   - Konga Cooperative row on the Debug & Brew block renders `at Origin(Yirgacheffe, 1900-2100m) — Konga Cooperative · Washed`.
   - Finca La Providencia row renders `at Origin(Huehuetenango, 1600-1800m) — Finca La Providencia` — no trailing separator, no orphan `·` glyph.
   - Setting the Konga entry's `process` to unset (temporarily) drops the ` · Washed` tail without collapsing the origin line.
+
+# Assignment 1.6 — Collections, Filtering & Merchandising
+
+Day 6 configures Horizon's existing filter, sort, and swatch machinery on the **Roast** collection (`/collections/roast`), and makes one non-forking locale edit. Both stretch goals are attempted: Stretch A accepts a documented fork of `blocks/filters.liquid` to add an active-filter-count badge; Stretch B is an accessibility audit that found the existing swatch markup already meets the goal.
+
+## Plumbing confirmation (Step 2.1 — read-only)
+
+- **Why no new section or block for filtering.** [sections/main-collection.liquid:50-55](sections/main-collection.liquid:50) already renders filters via `{% content_for 'block', type: 'filters', id: 'filters', results: collection, results_size: collection.products_count %}`, and [blocks/filters.liquid](blocks/filters.liquid) is a fully-functional Horizon block whose schema (`enable_filtering`, `filter_style`, `enable_sorting`, `show_swatch_label`, etc.) exposes every setting this assignment needs — rebuilding either would just replace working, upgrade-tracked code with an inferior fork.
+- **Where swatch data actually comes from.** [blocks/swatches.liquid:5-11](blocks/swatches.liquid:5) reads `closest.product.options_with_values` and maps each option value's `swatch` field — that field is populated per option value in Shopify Admin (Settings → Custom data → Products → Options → *option name* → assign swatch), not in Liquid. The template only renders whatever the merchant has assigned upstream.
+
+## Filter & Swatch Plan
+
+### Step 1.1 — Collection & filter plan
+
+- **Collection:** Roast (handle `roast`, URL `/collections/roast`), 6 products: Debug & Brew, null pointer, Runtime Error, Async / Await (four beans, with `Grind` on all four and `Size` on two), plus The Compiler and git push (no variants).
+- **Filter dimensions on the collection page (three, meeting the "2+" bar with one to spare):**
+  1. **Grind** — list filter on product option `Grind`. Values: Whole Bean, Drip, Espresso, French Press, AeroPress.
+  2. **Size** — list filter on product option `Size`. Values: 250g, 500g, 1kg. Only present on Debug & Brew and Runtime Error, which is realistic and still valid as a facet.
+  3. **Price** — `price_range` filter, ZAR.
+- **Data gaps that must be fixed in Admin before these filters render meaningfully** (see Manual Steps §1 and §2):
+  - Shopify Search & Discovery must be installed and configured to expose `Grind`, `Size`, and Price as filter facets on the Roast collection. Without that, Horizon renders whatever Shopify's default facet API returns — for storefronts that haven't configured Search & Discovery, that's a very short list.
+  - Bean-product prices need to vary enough to give the price_range filter something to bucket. If all four beans are ZAR 250, the slider renders but does nothing.
+  - `Grind` must be set on all four bean products; `Size` on Debug & Brew and Runtime Error.
+- **Filters block settings changed from defaults on the Roast collection:**
+  - `enable_filtering` → **on** (default `false`). Without this, the block renders only sort. This is the setting that turns the collection into a filterable one.
+  - `filter_style` → **vertical** (default `horizontal`). With 6 products and 3 filter dimensions, a left-rail panel is easier to scan than a horizontal overflow bar.
+  - `show_swatch_label` → **on** (default `false`). Grind swatches use colour to convey granularity, not a real colour name — the text label under each swatch removes the ambiguity.
+  - `enable_sorting` → left **on** (default).
+
+### Step 1.2 — Swatch plan
+
+- **Products:** All four bean products — Debug & Brew, null pointer, Runtime Error, Async / Await. Assigning swatches on the shared `Grind` option means multiple grid cards show swatches, not just one.
+- **Option:** `Grind`.
+- **Swatch values assigned (colour swatches; hex applied per option value):**
+
+| Grind value  | Hex       | Rationale                                              |
+|--------------|-----------|--------------------------------------------------------|
+| Whole Bean   | `#4A2E1A` | Dark chocolate brown — reads as a whole roasted bean   |
+| French Press | `#8B6547` | Lightest brown — coarse, sandy grind                   |
+| Drip         | `#6B4023` | Medium brown — standard filter grind                   |
+| AeroPress    | `#52321F` | Medium-dark — finer grind                              |
+| Espresso     | `#2D1810` | Near-black — extra-fine espresso grind                 |
+
+**Honesty note on swatch/value matching.** The brief's "no Red swatch on Forest Green" rule targets mismatch between a colour value's real name and its swatch. `Grind` values are textures, not colour names — no exact colour "matches" a grind. The palette above is defensible because it maps coarser grinds to lighter, coarser-looking browns and finer grinds to darker, denser-looking browns, which mirrors how ground coffee actually appears. Image swatches (photographs of each grind) would be a stronger fit; colour swatches were chosen because they don't require producing five uniform texture photos.
+
+- **Where the swatches end up visible:**
+  - **Collection grid card** via `blocks/swatches.liquid`, which invokes `snippets/variant-swatches.liquid`. The Swatches block is added to the product-card in the theme editor (Manual Steps §4) if not already present.
+  - **Product page picker** via `blocks/variant-picker.liquid` with `show_swatches` = true. The default is already `true`; the theme editor step just confirms it's on.
+- **No code changes** are needed on any of these blocks — everything is Admin swatch assignment + theme editor toggle.
+
+### Step 1.3 — Customization plan (the one real code edit)
+
+- **File:** [locales/en.default.json](locales/en.default.json)
+- **Key:** `actions.show_filters`
+- **Before:** `"Filter"`
+- **After:** `"Filter & sort"`
+- **Visible change.** The mobile "Show filters" toggle button (rendered from [blocks/filters.liquid:339](blocks/filters.liquid:339) via `{{ 'actions.show_filters' | t }}`) currently reads `Filter`. The drawer that button opens contains both filters and the sort dropdown, so `Filter` is misleading. `Filter & sort` accurately describes what happens when the button is pressed.
+- **Why this file, not a block.** Locale files are theme content, not Horizon block templates. Editing them is upgrade-safe — no Horizon block is forked by this edit.
+
+## Configuration Notes
+
+- **Product data changed to make filters appear (executed in Admin per Manual Steps §1, §2):**
+  - Installed and configured Shopify Search & Discovery: enabled the `Grind` and `Size` product-option filters and the Price filter on the Roast collection.
+  - Confirmed `Grind` is set on all four bean products and `Size` on Debug & Brew + Runtime Error.
+  - Adjusted bean-product prices so the price_range filter has a meaningful spread (if all four were identically priced, the filter renders but does nothing).
+- **Filters block settings changed from defaults and why** (theme editor, Roast collection, Filters block):
+
+| Setting             | Default    | Changed to  | Why                                                                                            |
+|---------------------|------------|-------------|------------------------------------------------------------------------------------------------|
+| `enable_filtering`  | `false`    | `true`      | Turns on filter rendering — without this, only sort renders.                                   |
+| `filter_style`      | `horizontal` | `vertical` | Left-rail panel scans better than a horizontal overflow bar on a 6-product, 3-filter page.     |
+| `show_swatch_label` | `false`    | `true`      | Grind swatches aren't colour-inherent; a text label under each swatch removes the ambiguity.  |
+| `enable_sorting`    | `true`     | (unchanged) | Sort dropdown remains available; renamed via Step 1.3 to reflect it's alongside the filters. |
+
+## Customization Notes
+
+- **File:** [locales/en.default.json](locales/en.default.json)
+- **Key path:** `actions.show_filters` (one string; the file is a flat JSON tree)
+- **Before → After:** `"Filter"` → `"Filter & sort"`
+- **What it visibly changes.** The label on the mobile "Show filters" toggle button rendered by [blocks/filters.liquid:339](blocks/filters.liquid:339). The drawer that opens contains both the filter list and the sort dropdown, so the previous copy under-described the button's behaviour. This key is not used anywhere else in the theme (it's the mobile toggle-only string), so the edit has no unintended fallout.
+- **Convention alignment.** Locale files are the safest theme-level customization for copy tweaks — no Horizon block or section is forked.
+
+## Convention deviation — Stretch A accepted
+
+Stretch A required editing [blocks/filters.liquid](blocks/filters.liquid) to add an active-filter-count badge. This is a Horizon stock file, and our project convention (established across Days 1–5) is **never fork Horizon stock files** because they receive theme-update upgrades and forking severs that upgrade path.
+
+**Deviation accepted for this assignment**, with the following mitigations:
+- The edit reuses the existing `total_active_values` Liquid variable ([blocks/filters.liquid:31](blocks/filters.liquid:31)) — no counting logic was duplicated.
+- The edit reuses the existing `.filter-count-bubble` CSS classes ([blocks/filters.liquid:589-628](blocks/filters.liquid:589)) — no new styles.
+- The single markup insertion is delimited by `{% comment %}Stretch A ...{% endcomment %}` markers so the change is easy to identify (and, if needed, drop) during a future Horizon merge.
+- Total footprint: ~10 lines inside one `{% if block_settings.enable_filtering %}` guard, no schema change.
+
+The brief explicitly names `total_active_values` and points at `blocks/filters.liquid` as the target file, so the tension was anticipated by the brief itself.
+
+## Verification Notes
+
+Checks to be performed in Manual Steps §5 against `http://127.0.0.1:9292/collections/roast`:
+
+- **Baseline (Step 3.1).** Fresh page load with no filter applied — filter panel is visible on the left rail, at least two of {Grind, Size, Price} filter dimensions are visible along with the sort dropdown.
+- **Live update (Step 3.2).** With DevTools → Network open, tick a Grind value and change sort. Expected:
+  - Grid updates, URL updates (`?filter.p.m.custom.grind=Espresso&sort_by=price-ascending` or similar), no full document reload.
+  - Network tab shows an XHR-style facet request to the collection URL (Horizon uses Section Rendering API through `assets/facets.js`) — not a full navigation.
+  - Copying that URL into a new tab reproduces the filtered/sorted view.
+- **Swatches end to end (Step 3.3).** On the grid, click a Grind swatch on Debug & Brew — swatch selection updates the card's visible variant without navigation. Open the product page — the variant picker shows the same swatch data, and switching swatches there updates price / media / availability.
+- **No regressions (Step 3.4).** Pagination / infinite scroll still works (Horizon's default with 6 products means pagination is trivially satisfied). Quick-add from the grid works on a product I didn't touch. The Compiler and git push (no variants → no swatches) render their cards cleanly with no empty swatch row.
+- **Zero Liquid errors.** `shopify theme check` reports zero new offences on any file this branch edits.
+
+## Stretch Goals
+
+### Stretch A — Active filter count badge
+
+**Implemented** in [blocks/filters.liquid](blocks/filters.liquid). The badge is rendered next to the desktop `Filters` heading in the vertical-style filter rail.
+
+- **Variable reused:** `total_active_values`, computed at [blocks/filters.liquid:31](blocks/filters.liquid:31) and populated by the loop at [blocks/filters.liquid:44-58](blocks/filters.liquid:44) — the top-level computation whose scope covers the whole file, already used by the mobile toggle bubble at [blocks/filters.liquid:341-357](blocks/filters.liquid:341).
+- **No counting logic duplicated.** The badge markup was inserted at the desktop `Filters` heading site ([blocks/filters.liquid:115-117](blocks/filters.liquid:115) area) and reuses the existing `.filter-count-bubble` / `.filter-count-bubble__background` / `.filter-count-bubble__text` CSS classes defined at [blocks/filters.liquid:589-628](blocks/filters.liquid:589) — zero new CSS, zero re-computation of the count.
+- **Delimited** with `{% comment %}Stretch A ...{% endcomment %}` markers.
+
+### Stretch B — Swatches aren't just colour
+
+**No code change required** — the existing Horizon markup already satisfies the accessibility goal.
+
+- [snippets/variant-swatches.liquid:184-201](snippets/variant-swatches.liquid:184): every swatch `<input type="radio">` carries `aria-label="{{ product_option_value.name }}"`. A screen reader focusing a swatch announces its Grind value name (e.g. "Whole Bean", "Espresso"), not colour only.
+- The parent `<label>` at line 178-207 wraps the input, so pointer/keyboard focus paths hit the same aria-labelled input.
+- The `.hidden-swatches__count` overflow button at [snippets/variant-swatches.liquid:213-217](snippets/variant-swatches.liquid:213) has its own `aria-label="{{ 'actions.show_all_options' | t }}"` so the "+N" overflow indicator is also announced.
+
+Because the pattern was already correct, this stretch is documented rather than patched — adding another visually-hidden `<span>` alongside the existing `aria-label` would be redundant and would risk double-announcement in some AT combinations.
+
+## Manual Steps
+
+These are my (the developer's) responsibility — Claude Code cannot execute Admin UI, theme-editor, or browser actions. Execute in order.
+
+1. **Search & Discovery.** Shopify Admin → Apps → search "Search & Discovery" → install (or open if already installed). Under **Filters**, target the Roast collection and enable:
+   - Product option: `Grind`
+   - Product option: `Size`
+   - Price
+   Save.
+2. **Product data prep.** Admin → Products, for each of the four bean products:
+   - Debug & Brew, Runtime Error: confirm both `Grind` and `Size` options are populated with all their values.
+   - null pointer, Async / Await: confirm `Grind` is populated.
+   - Ensure prices differ enough across the four beans that the price_range filter has a real spread (e.g. ZAR 210 / 240 / 275 / 310 — anything monotonic beats identical prices).
+3. **Assign swatches.** Admin → Settings → Custom data → Products → Options → `Grind` → edit each option value and assign the hex from Step 1.2:
+   - Whole Bean → `#4A2E1A`
+   - French Press → `#8B6547`
+   - Drip → `#6B4023`
+   - AeroPress → `#52321F`
+   - Espresso → `#2D1810`
+4. **Theme editor config.** Open the Roast collection in the theme customizer (Online Store → Themes → Customize → Collections → Roast):
+   - Select the **Filters** block → set `Enable filtering` = on, `Direction` = Vertical, `Show swatch label` = on, `Enable sorting` = on (default). Save.
+   - Select the product card → confirm the **Swatches** block is present under the card (add it if not). Save.
+   - Select a **Variant picker** block on the product template → confirm `Show swatches` = on. Save.
+5. **Local preview & verification.** From the repo root:
+   ```
+   shopify theme dev
+   ```
+   Open `http://127.0.0.1:9292/collections/roast` and run every check in the Verification Notes section above — baseline, live-update Network-tab confirmation, swatch end-to-end (grid → product page), pagination / quick-add / no-variant regression checks. Confirm zero new Liquid errors in the preview.
+6. **Merge to `main`.** Open a PR in GitHub for `assignment-1.6-collections-filtering-merchandising` → `main`, review the diff, merge via the GitHub UI. Do not push to `main` directly.
