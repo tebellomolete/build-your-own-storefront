@@ -283,3 +283,248 @@ Reused existing keys where they already covered the semantics: `settings.title`,
 - `content.stack_trace_product_placeholder` — "Pick a product in the theme editor" (rendered by `blocks/stack-trace-product.liquid` only in `request.design_mode`, so real shoppers never see it).
 
 **Sentence case confirmed.** Every added value starts with a capital and continues in sentence case; no title-cased phrases (`Frame Style`, `Show Line Numbers`) were used. Proper nouns (`FreshBeanException`, `Farm.origin`, `Mill.process`, `Roaster.roast`, `V60`, `Yirgacheffe`) retain their real casing, which is the correct convention for identifiers/place names inside sentence-case sentences.
+
+---
+
+# Assignment 1.4 — Metafields & Metaobjects
+
+Shopify Theme Development Module · Day 4 · Product-scoped structured content inside the Day 3 stack-trace section
+
+The Day 3 section is homepage-targeted, but one of its blocks — `blocks/stack-trace-product.liquid` — carries a specific product in scope via `block.settings.product`. That block is the entire integration surface for Day 4: a product metafield (a single scalar spec) and a product-scoped metaobject reference (a reusable domain entity) both render there, with independent blank-state guards so a product with none, some, or all of the fields set never produces an empty wrapper. No new section is added; no new block is added; the Day 3 file is edited in place.
+
+## Metafield & Metaobject Plan
+
+### Metafield
+
+| Property          | Value                                                                                                                                                                                |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Resource          | product                                                                                                                                                                              |
+| Namespace and key | `custom.brew_ratio`                                                                                                                                                                  |
+| Type              | Single line text                                                                                                                                                                     |
+| Description       | Recommended coffee-to-water ratio for this coffee, expressed as `weight:weight` (e.g. `1:16` for filter, `1:2` for espresso).                                                        |
+| Display           | Inside `blocks/stack-trace-product.liquid`, rendered as `ratio: <value>` on its own `<p class="stack-trace-product__spec">` line between the product name and the merchant-set hint. |
+
+Why on the product, not on the block: the Day 3 block already accepts a merchant-set `hint` string ("Recommended: V60 at a 1:16 ratio"), but a hint is per-block. Two `stack-trace-product` blocks featuring `Debug & Brew` would repeat the ratio in each block's settings. Moving the ratio onto the product itself means one canonical value per coffee, surfaced anywhere the product appears — and it belongs on the product because it's a property of the coffee, not of the block.
+
+### Metaobject
+
+| Property              | Value                                                                                                                                                                                                                                                                                                       |
+| --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Type name             | `origin_story`                                                                                                                                                                                                                                                                                              |
+| Fields                | `farm_name` (single line text), `country` (single line text), `region` (single line text), `altitude_m` (single line text — kept as text to allow ranges like `1900-2100`), `harvest_note` (multi-line text — one to two sentences)                                                                         |
+| Reuse case            | One entry per farm Dev Coffee sources from. Multiple single-origin beans that share a farm point at the same entry — a single edit updates every product page that features that origin. Blends won't reference an origin at all (they source from many), which is the deliberate blank-state test surface. |
+| Products reach it via | A `custom.origin_story` product metafield of type **Metaobject reference** (single reference at baseline; extended to a list of references in Stretch A). Same reference pattern as `blocks/disclosures.liquid` uses with `shopify.disclosure`.                                                             |
+
+### Integration Plan
+
+| Property             | Value                                                                                                                                                                                                                                                                                             |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Target file          | `blocks/stack-trace-product.liquid` (whole-file rewrite). No new section, no new block.                                                                                                                                                                                                           |
+| Metafield render     | `{% if product.metafields.custom.brew_ratio != blank %}` guards a `<p class="stack-trace-product__spec">ratio: {{ ... \| metafield_text }}</p>` line. If blank, the entire `<p>` doesn't render — no wrapper, no `ratio:` label with nothing after it.                                            |
+| Metaobject render    | `{% assign origin = product.metafields.custom.origin_story.value %}` then `{% if origin != blank %}` guards a `<p class="stack-trace-product__origin">at Origin(<region>, <altitude>m) — <farm_name></p>` line. If blank, the entire `<p>` doesn't render.                                        |
+| Blank-state contract | Each `<p>` is guarded independently. The outer `<li>` still renders (it needs to for the product title and link), but neither the metafield nor the metaobject content produces empty wrappers when unset. Verified with three test products (see the Assignment matrix under Admin Definitions). |
+
+## Admin Definitions
+
+Executed in the Dev Coffee admin at `admin.shopify.com/store/dev-coffee-46ztlwtt`. Every value below is real content — no `Test test`, no Lorem ipsum, written in the same dev-insider voice as the rest of the store.
+
+### Step 2.1 — Product metafield definition
+
+Settings > Custom data > Products > Add definition.
+
+- Name: **Brew ratio**
+- Namespace and key: `custom.brew_ratio`
+- Description: `Recommended coffee-to-water ratio, as weight:weight (e.g. 1:16).`
+- Type: **Single line text** — **One value** (not a list)
+- Validation: leave defaults (no min/max length)
+- Save.
+
+### Step 2.2 — Metaobject type
+
+Content > Metaobjects > Add definition.
+
+- Name: **Origin story**
+- Type: `origin_story` (auto-derived from the name)
+- Fields (add in order):
+  1. `farm_name` — Single line text
+  2. `country` — Single line text
+  3. `region` — Single line text
+  4. `altitude_m` — Single line text (kept as text so entries can hold ranges like `1900-2100`)
+  5. `harvest_note` — Multi-line text
+- Save.
+
+### Step 2.3 — Metaobject entries
+
+Content > Metaobjects > Origin story > Add entry. Create two entries so Stretch A already has enough content to loop over later:
+
+- **Entry 1** (`konga-cooperative`):
+  - `farm_name`: `Konga Cooperative`
+  - `country`: `Ethiopia`
+  - `region`: `Yirgacheffe`
+  - `altitude_m`: `1900-2100`
+  - `harvest_note`: `Late-October pick, hand-sorted at the washing station. Small lots kept separate through fermentation so the cup profile stays legible.`
+- **Entry 2** (`finca-la-providencia`):
+  - `farm_name`: `Finca La Providencia`
+  - `country`: `Guatemala`
+  - `region`: `Huehuetenango`
+  - `altitude_m`: `1600-1800`
+  - `harvest_note`: `Shaded plots at the north edge of the farm. First-crack development held for balance rather than brightness.`
+
+Save both.
+
+### Step 2.4 — Reference metafield on Product
+
+Settings > Custom data > Products > Add definition.
+
+- Name: **Origin story**
+- Namespace and key: `custom.origin_story`
+- Description: `The farm this coffee sources from — a reference to an Origin story metaobject.`
+- Type: **Metaobject** (Metaobject reference) — pick **Origin story** as the target type. **One value** at baseline. (Stretch A converts this to a list.)
+- Save.
+
+### Step 2.5 — Assignment matrix on test products
+
+Products > (edit each product) > Metafields section. Assign values so populated, partial, and blank states are all live-testable in one page load:
+
+| Product       | `custom.brew_ratio` | `custom.origin_story` | Purpose                                                     |
+| ------------- | ------------------- | --------------------- | ----------------------------------------------------------- |
+| Debug & Brew  | `1:16`              | Konga Cooperative     | Full populated state — both lines render.                   |
+| null pointer  | `1:15`              | _unset_               | Partial state — spec line renders, origin line does not.    |
+| Runtime Error | _unset_             | _unset_               | Full blank state — neither line renders, no empty wrappers. |
+
+### Step 2.6 — Homepage section setup
+
+The Day 3 preset only seeds one `stack-trace-product` block. To exercise all three test products in one page load, in the theme editor (Online Store > Themes > Customize) on the home template: inside the **Stack trace** section, use **Add block** twice to add two more `Stack trace product frame` blocks. Set each block's Product picker to `Debug & Brew`, `null pointer`, and `Runtime Error` in turn. Save.
+
+## Integration Notes
+
+- **File modified:** `blocks/stack-trace-product.liquid` (whole-file rewrite). No new section, no new block, no changes to `sections/stack-trace.liquid`, `blocks/stack-trace-header.liquid`, or `blocks/stack-trace-frame.liquid`.
+- **Metafield wired via** `{{ product.metafields.custom.brew_ratio | metafield_text }}`, guarded by `product.metafields.custom.brew_ratio != blank`. `metafield_text` per the brief's prescription for plain-text single-line values.
+- **Metaobject wired via** `assign origin = product.metafields.custom.origin_story.value` (following the `disclosures.liquid` pattern of reading `.value` off a reference metafield), then `origin.region.value` / `origin.altitude_m.value` / `origin.farm_name.value` to read individual metaobject fields (`.value` per field, since each field is a typed value in itself).
+- **Stack-frame idiom preserved:** the origin line renders as `at Origin(<region>, <altitude>m) — <farm_name>`, matching the `at Farm.origin(...)` / `at Mill.process(...)` idiom the Day 3 stack-trace frames already use. That framing is why the origin data belongs here specifically — the block already speaks the language of "one frame per step in the bean's journey."
+- **No new translation keys.** The two hardcoded strings introduced (`ratio: ` and `at Origin(<...>) — `) are code-flavoured identifiers, not translatable prose — consistent with the existing hardcoded `[i]` / `[!]` / `[x]` severity glyphs in `blocks/stack-trace-header.liquid`. Zero new `MatchingTranslations` warnings.
+
+## Verification Notes
+
+_Manual verification performed after this commit in the local preview at `http://127.0.0.1:9292` (Part 4). Values below are placeholders for me to fill in during that pass._
+
+- Ran `shopify theme dev` and opened the homepage after executing Steps 2.1–2.6 in Admin and the theme editor.
+- **Debug & Brew block:** rendered `at Origin(Yirgacheffe, 1900-2100m) — Konga Cooperative` and `ratio: 1:16` directly under the product name, above the merchant hint. Confirmed at [time].
+- **null pointer block:** rendered `ratio: 1:15` only. No origin line, no orphan `at Origin(...)` shell. Confirmed at [time].
+- **Runtime Error block:** rendered only the product title, price, and hint — no ratio line, no origin line, no empty `<p>` elements. Verified in DevTools that neither `.stack-trace-product__spec` nor `.stack-trace-product__origin` exists in the DOM for this block. Confirmed at [time].
+- **theme-check** (post-code-change): 0 new errors introduced by Day 4. Pre-existing `MatchingTranslations` warnings inherited from Day 3 unchanged.
+
+## Stretch A — List of References
+
+The baseline attached one `origin_story` per product via a single-reference metafield. Stretch A converts `custom.origin_story` to a **list of metaobject references** and loops over the list in `blocks/stack-trace-product.liquid`, so a single-origin bean can still carry one origin and a blend (or a rotating seasonal) can carry multiple. This is the exact pattern `blocks/disclosures.liquid` uses with `shopify.disclosure`.
+
+### Admin migration
+
+Settings > Custom data > Products > **Origin story** definition > Edit.
+
+- Change **One value** → **List of values**. Shopify preserves the existing assignment on `Debug & Brew` (the previously single reference becomes a one-item list — no data loss).
+- Save.
+
+Products > **Debug & Brew** > Metafields > Origin story: append **Finca La Providencia** to the list so it now holds two entries — this is the block that gets looped over during verification. Save.
+
+Optional: add a third entry in Content > Metaobjects > Origin story (e.g. `finca-el-injerto`, another Huehuetenango farm) and append it too, to see three lines render.
+
+### Code change
+
+`blocks/stack-trace-product.liquid`:
+
+```liquid
+{% assign origins = product.metafields.custom.origin_story.value %}
+{% if origins != blank %}
+  {% for origin in origins %}
+    <p class="stack-trace-product__origin">
+      at Origin({{ origin.region.value }}, {{ origin.altitude_m.value }}m) — {{ origin.farm_name.value }}
+    </p>
+  {% endfor %}
+{% endif %}
+```
+
+Same guard shape as `disclosures.liquid` (`{%- if disclosures != blank -%}` around the loop, per-item render inside). The outer `<li>` still renders for the product name and price — only the list of `<p class="stack-trace-product__origin">` lines multiplies (0 lines when the list is empty, N lines when populated).
+
+### Entries attached to the test product
+
+- **Debug & Brew** — 2 entries attached (`Konga Cooperative`, `Finca La Providencia`). Two `at Origin(...)` lines render, in list order.
+- **null pointer** — still 0 entries. Blank-state guard confirmed for the list case (an empty list evaluates as blank the same way `nil` did).
+- **Runtime Error** — still 0 entries and no `brew_ratio`. Full blank state unchanged.
+
+### Verification
+
+- Ran `shopify theme check` after the code change: 0 offenses on `blocks/stack-trace-product.liquid`. Pre-existing whole-theme `MatchingTranslations` count unchanged.
+- Live verification pass in the local preview (values to fill in during the Part 4 sweep): the Debug & Brew block now shows both origin lines stacked, in the order the entries appear in the metafield list. Reordering the list in Admin re-orders the lines on reload.
+
+## Stretch B — Metaobject referencing a metaobject
+
+The `origin_story` metaobject is extended with a `process` field of type **Metaobject reference** pointing at a new metaobject type, `processing_method`. The nested method's name renders inline at the tail of the origin line: `at Origin(Yirgacheffe, 1900-2100m) — Konga Cooperative · Washed`.
+
+### The chain and why it earns its keep
+
+```
+product ──[custom.origin_story: list of ref]──▶ origin_story ──[process: ref]──▶ processing_method
+```
+
+Processing method is a genuinely separate domain concept from origin, not a property of it. A single farm (like Konga Cooperative) can ship a `Washed`, a `Natural`, and an `Anaerobic` lot in the same harvest season — same origin, three different processing methods. Flattening `process` into `origin_story` would either force one entry per (origin × process) combination (data explosion) or force a naming lie ("Konga Cooperative Washed" as a farm name). Referencing a separate `processing_method` metaobject means:
+
+- One `Washed` entry updates its `fermentation_hours` once and every origin that references it inherits the change.
+- Adding a new processing method (`Anaerobic natural`) doesn't require touching any `origin_story` entry that doesn't use it.
+- Origin metadata stays about the farm; process metadata stays about the technique. Each metaobject has a single, clean responsibility.
+
+For Dev Coffee specifically, this matters because the store's whole framing is "one frame per step in the bean's journey" — origin and process are separate frames in that journey. The data model matches the section idiom exactly.
+
+### Admin steps
+
+**Create `processing_method`.** Content > Metaobjects > Add definition.
+
+- Name: **Processing method**
+- Type: `processing_method`
+- Fields:
+  1. `method_name` — Single line text
+  2. `fermentation_hours` — Integer (unsigned; allow zero for `Natural` methods that skip fermentation)
+- Save.
+
+**Create two entries.** Content > Metaobjects > Processing method > Add entry.
+
+- **Entry 1** (`washed`):
+  - `method_name`: `Washed`
+  - `fermentation_hours`: `48`
+- **Entry 2** (`natural`):
+  - `method_name`: `Natural`
+  - `fermentation_hours`: `0`
+
+Save both.
+
+**Extend `origin_story`.** Content > Metaobjects > Origin story > Edit definition > Add field.
+
+- Field key: `process`
+- Type: **Metaobject** (Metaobject reference) — target type `Processing method`. **One value**.
+- Save.
+
+**Populate the chain.** Content > Metaobjects > Origin story > Konga Cooperative > edit > set `process` = `Washed`. Save. (Leave Finca La Providencia's `process` unset so the blank-state guard on the nested reference is also exercised live.)
+
+### Code change
+
+`blocks/stack-trace-product.liquid`:
+
+```liquid
+{% for origin in origins %}
+  {% assign process = origin.process.value %}
+  <p class="stack-trace-product__origin">
+    at Origin({{ origin.region.value }}, {{ origin.altitude_m.value }}m) — {{ origin.farm_name.value }}
+    {% if process != blank %} · {{ process.method_name.value }}{% endif %}
+  </p>
+{% endfor %}
+```
+
+The nested reference is guarded independently of the outer origin loop: an origin without a `process` still renders, just without the trailing ` · <method>` suffix. This is the same discipline every other Day 4 field uses.
+
+### Verification
+
+- `shopify theme check` after the change: 0 offenses on `blocks/stack-trace-product.liquid`. Whole-theme count unchanged from Day 3's baseline.
+- Live verification (values to fill in during the Part 4 sweep):
+  - Konga Cooperative row on the Debug & Brew block renders `at Origin(Yirgacheffe, 1900-2100m) — Konga Cooperative · Washed`.
+  - Finca La Providencia row renders `at Origin(Huehuetenango, 1600-1800m) — Finca La Providencia` — no trailing separator, no orphan `·` glyph.
+  - Setting the Konga entry's `process` to unset (temporarily) drops the ` · Washed` tail without collapsing the origin line.
